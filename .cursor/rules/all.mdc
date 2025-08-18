@@ -1,0 +1,112 @@
+Before diving into the best practices, please note that you may need to adapt the globs depending on your project's specific structure and file types.
+
+---
+name: nextjs-best-practices.mdc
+description: Best practices for Next.js applications and routing
+globs: **/*.{ts,tsx}
+---
+
+- Use the App Router for better performance and improved data fetching.
+- Implement proper error boundaries to handle and display errors gracefully.
+- Utilize Next.js built-in optimizations like image optimization and code splitting.
+- Use `getStaticProps` and `getServerSideProps` appropriately for data fetching.
+
+---
+name: react-best-practices.mdc
+description: Best practices for React component development
+globs: **/*.{tsx,jsx}
+---
+
+- Use functional components with hooks instead of class components.
+- Implement proper state management using `useState` or external libraries.
+- Utilize `useEffect` for side effects and cleanup functions.
+- Follow the single responsibility principle for components.
+
+---
+name: tailwindcss-best-practices.mdc
+description: Best practices for using Tailwind CSS in your project
+globs: **/*.{tsx,jsx,css}
+---
+
+- Use utility classes directly in your JSX for faster development.
+- Create custom components for frequently used class combinations.
+- Utilize responsive utilities for mobile-first design.
+- Keep your `tailwind.config.js` organized and maintainable.
+
+---
+name: shadcn-ui-best-practices.mdc
+description: Best practices for using Shadcn UI components
+globs: **/*.{tsx,jsx}
+---
+
+- Follow the component structure and naming conventions provided by Shadcn UI.
+- Customize components using the provided props and slots.
+- Ensure accessibility by using the built-in ARIA attributes.
+- Keep components lightweight by only importing necessary dependencies.
+
+---
+name: radix-ui-best-practices.mdc
+description: Best practices for using Radix UI primitives
+globs: **/*.{tsx,jsx}
+---
+
+- Use Radix UI primitives as building blocks for custom components.
+- Follow the accessibility guidelines provided by Radix UI.
+- Utilize the provided styling props for consistent theming.
+- Keep up with Radix UI updates for the latest features and improvements.
+
+---
+name: azure-cosmos-best-practices.mdc
+description: Best practices for using Azure Cosmos DB
+globs: **/*.ts
+---
+
+- Use the appropriate consistency level for your application's needs.
+- Implement proper error handling and retry logic for database operations.
+- Utilize partitioning effectively to distribute data and improve performance.
+- Use the change feed for real-time data processing and event-driven architectures.
+
+---
+name: azure-msal-best-practices.mdc
+description: Best practices for using Azure MSAL for authentication
+globs: **/*.ts
+---
+
+- Implement proper token caching and refresh mechanisms.
+- Use the appropriate authentication flow (e.g., authorization code flow) for your app.
+- Handle authentication errors gracefully and provide clear user feedback.
+- Keep your MSAL configuration secure and avoid hardcoding sensitive information.
+
+---
+name: azure-storage-blob-best-practices.mdc
+description: Best practices for using Azure Blob Storage
+globs: **/*.ts
+---
+
+- Use appropriate access tiers (hot, cool, archive) based on data access patterns.
+- Implement proper error handling and retry policies for blob operations.
+- Utilize SAS tokens for secure, time-limited access to blobs.
+- Optimize performance by using asynchronous operations and batching where possible.
+
+---
+
+name: react-pdf-viewer-best-practices.mdc
+description: Best practices for using React PDF Viewer
+globs: **/*.tsx
+---
+
+- Optimize PDF loading by using appropriate plugins and configurations.
+- Implement proper error handling for PDF loading and rendering issues.
+- Utilize the provided customization options for UI and functionality.
+- Ensure accessibility by following the library's accessibility guidelines.
+
+---
+name: tanstack-react-table-best-practices.mdc
+description: Best practices for using TanStack React Table
+globs: **/*.tsx
+---
+
+- Use the appropriate data model (e.g., array of objects) for your table data.
+- Implement proper sorting, filtering, and pagination for large datasets.
+- Utilize the provided customization options for styling and functionality.
+- Keep your table components modular and reusable across your application.

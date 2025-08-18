@@ -1,115 +1,131 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/9113740/201498864-2a900c64-d88f-4ed4-b5cf-770bcb57e1f5.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/9113740/201498152-b171abb8-9225-487a-821c-6ff49ee48579.png">
-</picture>
+# 产品需求文档（最终版）
 
-<div align="center"><strong>Next.js Admin Dashboard Starter Template With Shadcn-ui</strong></div>
-<div align="center">Built with the Next.js 15 App Router</div>
-<br />
-<div align="center">
-<a href="https://dub.sh/shadcn-dashboard">View Demo</a>
-<span>
-</div>
+## 1. 产品管理
 
-## Overview
+此模块用于定义和管理产品的基础信息。产品分为 **原材料** 和 **组合产品（成品）** 两大类。
 
-This is a starter template using the following stack:
+* **通用核心字段**:
+    * **SKU**: 产品的唯一标识符。
+    * **名字**: 产品的名称。
+    * **图片**: 产品的视觉展示。
+    * **类型**: 产品的分类（明确是“原材料”还是“组合产品”）。
+* **原材料**:
+    * **参考采购单价**: 在录入原材料时手动指定。此价格仅作为创建采购单时的默认参考价，实际成本以采购入库时计算为准。
+* **组合产品（成品）**:
+    * **产品构成 (BOM - Bill of Materials)**:
+        * 定义组成一个成品单位所需的所有原材料及其对应的数量。
+        * 例如：1个花环 = 10个原材料A + 5个原材料B + 8个原材料C。
+    * **产品成本**:
+        * **系统自动计算**: 此成本无需手动录入。系统将根据其“产品构成”中所有原材料的“参考采购单价”及所需数量，自动计算并加总得出。
+        * 计算公式：`组合产品成本 = Σ (单种原材料参考采购单价 × 所需数量)`
+    * **指导单价**:
+        * 设定产品的建议销售价格或内部核算价格。这个价格可以作为参考，与系统计算的成本分开。
 
-- Framework - [Next.js 15](https://nextjs.org/13)
-- Language - [TypeScript](https://www.typescriptlang.org)
-- Auth - [Clerk](https://go.clerk.com/ILdYhn7)
-- Error tracking - [<picture><img alt="Sentry" src="public/assets/sentry.svg">
-        </picture>](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)
-- Styling - [Tailwind CSS v4](https://tailwindcss.com)
-- Components - [Shadcn-ui](https://ui.shadcn.com)
-- Schema Validations - [Zod](https://zod.dev)
-- State Management - [Zustand](https://zustand-demo.pmnd.rs)
-- Search params state manager - [Nuqs](https://nuqs.47ng.com/)
-- Tables - [Tanstack Data Tables](https://ui.shadcn.com/docs/components/data-table) • [Dice table](https://www.diceui.com/docs/components/data-table)
-- Forms - [React Hook Form](https://ui.shadcn.com/docs/components/form)
-- Command+k interface - [kbar](https://kbar.vercel.app/)
-- Linting - [ESLint](https://eslint.org)
-- Pre-commit Hooks - [Husky](https://typicode.github.io/husky/)
-- Formatting - [Prettier](https://prettier.io)
+## 2. 采购管理
 
-_If you are looking for a Tanstack start dashboard template, here is the [repo](https://git.new/tanstack-start-dashboard)._
+该模块负责管理所有采购活动，从计划到结算。
 
-## Pages
+* **采购计划**:
+    * **计划采购量**: 根据生产或销售需求，制定采购计划。
+    * **生成采购单**: 基于采购计划，自动或手动生成采购订单。
+* **采购单**:
+    * **主数据**:
+        * **供应商**: 每张采购单对应唯一一个供应商，可从供应商列表中选择。
+        * **附加价格**: 记录额外费用，如运费。
+    * **明细数据 (Line Items)**:
+        * **采购SKU**: 从产品列表中选择要采购的原材料SKU。
+        * **采购数量**: 手动填写本次采购的数量。
+        * **采购单价**: 系统自动带入该SKU在“产品管理”中定义的“参考采购单价”。
+        * **SKU总价**: 系统自动计算 `(采购数量 × 采购单价)`。
+    * **总价计算**:
+        * **采购单总价**: 系统自动计算，公式为 `Σ (所有SKU总价) + 附加价格`。
+    * **状态管理**:
+        * **付款状态**: 手动更新，可选状态包括：`未付款`、`已付款`。
+        * **到货状态**: 手动更新，可选状态包括：`未到货`、`已到货`。
 
-| Pages                                                                                 | Specifications                                                                                                                                                                                                                                                          |
-| :------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Signup / Signin](https://go.clerk.com/ILdYhn7)      | Authentication with **Clerk** provides secure authentication and user management with multiple sign-in options including passwordless authentication, social logins, and enterprise SSO - all designed to enhance security while delivering a seamless user experience. |
-| [Dashboard (Overview)](https://shadcn-dashboard.kiranism.dev/dashboard)    | Cards with Recharts graphs for analytics. Parallel routes in the overview sections feature independent loading, error handling, and isolated component rendering. |
-| [Product](https://shadcn-dashboard.kiranism.dev/dashboard/product)         | Tanstack tables with server side searching, filter, pagination by Nuqs which is a Type-safe search params state manager in nextjs                                                                                                                                       |
-| [Product/new](https://shadcn-dashboard.kiranism.dev/dashboard/product/new) | A Product Form with shadcn form (react-hook-form + zod).                                                                                                                                                                                                                |
-| [Profile](https://shadcn-dashboard.kiranism.dev/dashboard/profile)         | Clerk's full-featured account management UI that allows users to manage their profile and security settings                                                                                                                                                             |
-| [Kanban Board](https://shadcn-dashboard.kiranism.dev/dashboard/kanban)     | A Drag n Drop task management board with dnd-kit and zustand to persist state locally.                                                                                                                                                                                  |
-| [Not Found](https://shadcn-dashboard.kiranism.dev/dashboard/notfound)      | Not Found Page Added in the root level                                                                                                                                                                                                                                  |
-| [Global Error](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)           | A centralized error page that captures and displays errors across the application. Integrated with **Sentry** to log errors, provide detailed reports, and enable replay functionality for better debugging. |
+## 3. 供应商管理
 
-## Feature based organization
+集中管理所有供应商信息。
 
-```plaintext
-src/
-├── app/ # Next.js App Router directory
-│ ├── (auth)/ # Auth route group
-│ │ ├── (signin)/
-│ ├── (dashboard)/ # Dashboard route group
-│ │ ├── layout.tsx
-│ │ ├── loading.tsx
-│ │ └── page.tsx
-│ └── api/ # API routes
-│
-├── components/ # Shared components
-│ ├── ui/ # UI components (buttons, inputs, etc.)
-│ └── layout/ # Layout components (header, sidebar, etc.)
-│
-├── features/ # Feature-based modules
-│ ├── feature/
-│ │ ├── components/ # Feature-specific components
-│ │ ├── actions/ # Server actions
-│ │ ├── schemas/ # Form validation schemas
-│ │ └── utils/ # Feature-specific utilities
-│ │
-├── lib/ # Core utilities and configurations
-│ ├── auth/ # Auth configuration
-│ ├── db/ # Database utilities
-│ └── utils/ # Shared utilities
-│
-├── hooks/ # Custom hooks
-│ └── use-debounce.ts
-│
-├── stores/ # Zustand stores
-│ └── dashboard-store.ts
-│
-└── types/ # TypeScript types
-└── index.ts
-```
+* **供应商基础信息**:
+    * **简称/代号**: 供应商的内部唯一标识。
+    * **供应商全称**: 供应商的法定全称。
+    * **账号**: 供应商的银行账户或其他财务账号。
+* **供应商结算**:
+    * **统一结算中心**: 此模块用于统一处理对供应商的付款，包括采购货款和加工费用。
+    * **结算流程**:
+        1. 选择一个供应商。
+        2. 系统列出该供应商所有状态为“未付款”的单据。
+        3. **单据类型**:
+            * **采购单**: 显示应付金额为“采购单总价”。
+            * **加工单**: 显示应付金额为“其他加工费用”。
+        4. 用户勾选需要本次结算的单据，系统自动汇总总金额。
+        5. 确认付款后，系统将对应采购单和加工单的“付款状态”更新为“已付款”。
 
-## Getting Started
+## 4. 产品加工
 
-> [!NOTE]  
-> We are using **Next 15** with **React 19**, follow these steps:
+管理产品的生产和加工流程。
 
-Clone the repo:
+* **创建加工单**:
+    1. **选择成品并输入数量**: 首先，选择要生产的“组合产品”SKU，并填写计划生产的数量（例如：组合产品A，100个）。
+    2. **系统计算物料需求**: 系统根据该组合产品的BOM，自动计算出所需各种原材料的总量（例如：需要SKU-001 150个，SKU-002 50个）。
+    3. **自动领料与成本计算 (FIFO)**:
+        * 系统将自动按照“先进先出”原则，从 **原材料批次库存** 中匹配物料。用户 **无需** 手动选择批次。
+        * 系统会从最旧的批次开始扣减库存，直到满足所需数量。如果一个批次不够，则继续从下一个最旧的批次中扣减，以此类推。
+        * **加工单物料成本** 会根据实际领用的各个批次的“实际入库单价”和数量精确计算。例如，所需150个SKU-001，系统可能会从成本为1.8元的旧批次中领用100个，再从成本为1.9元的新批次中领用50个。
+* **加工单总成本**:
+    * **物料总成本**: `Σ (各批次领用数量 × 对应批次实际入库单价)`。
+    * **其他加工费用**: 可手动录入额外的加工费、人工费等。此费用将关联到加工供应商，并在“供应商结算”模块中进行结算。
+    * **加工单总成本**: `物料总成本 + 其他加工费用`。
+* **状态管理**:
+    * **付款状态**: 针对“其他加工费用”，可选状态包括：`未付款`、`已付款`。
+* **加工完成**:
+    * 当加工单完成后，系统将根据“加工单总成本”和实际产出的成品数量，计算出这批成品的 **实际单位成本**，并将其作为新的批次计入 **成品库存**。
 
-```
-git clone https://github.com/Kiranism/next-shadcn-dashboard-starter.git
-```
+## 5. 原材料库存管理（批次库存）
 
-- `pnpm install` ( we have legacy-peer-deps=true added in the .npmrc)
-- Create a `.env.local` file by copying the example environment file:
-  `cp env.example.txt .env.local`
-- Add the required environment variables to the `.env.local` file.
-- `pnpm run dev`
+跟踪和管理原材料的批次库存。库存的核心是“批次”，而非简单的SKU总和。
 
-##### Environment Configuration Setup
+* **入库（生成批次）**:
+    * **触发条件**: 当采购单的“到货状态”标记为“已到货”时，系统自动执行入库操作。
+    * **成本计算与分摊**:
+        1. 系统首先计算出附加价格在各个SKU上的分摊比例，公式为：`分摊比例 = 单个SKU总价 / 所有SKU总价之和`。
+        2. 计算每个SKU分摊到的附加费：`分摊附加费 = 附加价格 × 分摊比例`。
+        3. 计算每个SKU的实际总成本：`实际总成本 = SKU总价 + 分摊附加费`。
+        4. 计算最终的 **实际入库单价**: `实际入库单价 = 实际总成本 / 采购数量`。
+    * **生成库存批次**:
+        * 系统为该采购单中的每一种SKU，在库存中创建一个新的、独立的 **批次**。
+        * **批次信息应包含**: `批次号` (可关联采购单号), `SKU`, `入库数量`, `实际入库单价`, `入库日期`。
+* **出库**:
+    * **加工领料出库 (FIFO)**: 在创建加工单时，系统根据“先进先出”原则自动从最早的批次开始扣减库存。
 
-To configure the environment for this project, refer to the `env.example.txt` file. This file contains the necessary environment variables required for authentication and error tracking.
+## 6. 成品库存管理（批次库存）
 
-You should now be able to access the application at http://localhost:3000.
+跟踪和管理组合产品（成品）的批次库存。
 
-> [!WARNING]
-> After cloning or forking the repository, be cautious when pulling or syncing with the latest changes, as this may result in breaking conflicts.
+* **入库（生成批次）**:
+    * **触发条件**: 当一个“加工单”标记为完成后，系统自动执行成品入库操作。
+    * **生成库存批次**:
+        * 系统为该加工单产出的成品，在库存中创建一个新的、独立的 **批次**。
+        * **批次信息应包含**: `批次号` (可关联加工单号), `SKU`, `入库数量` (加工产出数量), `实际单位成本` (由加工单总成本计算得出), `入库日期`。
+* **出库**:
+    * **销售出库**: 当成品售出时，可从此库存中进行扣减。同样可以采用“先进先出”原则来核算销售成本。
 
-Cheers! 🥂
+## 7. 操作日志 (Log)
+
+此模块用于记录系统中所有的关键操作，以确保系统的安全性、透明度和可追溯性。
+
+* **日志记录范围**:
+    * 系统应对所有模块中的 **新增 (Create)**、**修改 (Update)**、**删除 (Delete)** 操作进行记录。
+* **日志记录字段**:
+    * **操作用户**: 记录执行操作的用户账号或姓名。
+    * **操作时间**: 精确到秒的时间戳。
+    * **操作模块**: 记录操作发生的具体功能模块（如：采购单、产品管理、供应商结算等）。
+    * **操作类型**: 明确是“新增”、“修改”还是“删除”。
+    * **操作对象**: 记录被操作的数据对象的唯一标识（如：采购单号 #PC20240101, SKU #001）。
+    * **操作详情**:
+        * **新增**: 记录新增数据的主要内容。
+        * **删除**: 记录被删除数据的主要内容。
+        * **修改**: **必须同时记录修改前（Old Value）和修改后（New Value）的数据**，以便对比和追溯。例如：“将采购单 #PC20240101 的付款状态从'未付款'修改为'已付款'”。
+* **日志查询**:
+    * 提供后台界面，支持按操作用户、时间范围、操作模块等条件筛选和查询日志记录。

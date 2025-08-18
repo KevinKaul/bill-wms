@@ -1,0 +1,239 @@
+// 仓库管理系统 Prisma Schema
+// 基于产品需求文档设计的数据库结构
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 枚举类型定义
+enum ProductType {
+  RAW_MATERIAL    // 原材料
+  FINISHED_PRODUCT // 组合产品（成品）
+}
+
+enum PaymentStatus {
+  UNPAID  // 未付款
+  PAID    // 已付款
+}
+
+enum DeliveryStatus {
+  NOT_DELIVERED // 未到货
+  DELIVERED     // 已到货
+}
+
+enum ProcessingStatus {
+  PENDING     // 待处理
+  IN_PROGRESS // 进行中
+  COMPLETED   // 已完成
+}
+
+enum OperationType {
+  CREATE // 新增
+  UPDATE // 修改
+  DELETE // 删除
+}
+
+// 1. 产品管理
+model Product {
+  id                String      @id @default(cuid())
+  sku              String      @unique // 产品唯一标识符
+  name             String      // 产品名称
+  image            String?     // 产品图片URL
+  type             ProductType // 产品类型
+  
+  // 原材料字段
+  referencePurchasePrice Decimal? @db.Decimal(10, 2) // 参考采购单价
+  
+  // 组合产品字段
+  guidancePrice    Decimal?    @db.Decimal(10, 2) // 指导单价
+  
+  // 关联关系
+  bomItems         BOMItem[]   @relation("ProductBOM") // 作为成品的BOM构成
+  bomComponents    BOMItem[]   @relation("ComponentProduct") // 作为原材料的BOM组件
+  purchaseItems    PurchaseOrderItem[]
+  rawMaterialBatches RawMaterialBatch[]
+  finishedProductBatches FinishedProductBatch[]
+  processOrders    ProcessOrder[]
+  
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  
+  @@map("products")
+}
+
+// BOM (Bill of Materials) - 产品构成
+model BOMItem {
+  id          String  @id @default(cuid())
+  productId   String  // 成品ID
+  componentId String  // 原材料ID
+  quantity    Decimal @db.Decimal(10, 3) // 所需数量
+  
+  product     Product @relation("ProductBOM", fields: [productId], references: [id], onDelete: Cascade)
+  component   Product @relation("ComponentProduct", fields: [componentId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([productId, componentId])
+  @@map("bom_items")
+}
+
+// 2. 供应商管理
+model Supplier {
+  id          String @id @default(cuid())
+  code        String @unique // 简称/代号
+  fullName    String // 供应商全称
+  account     String? // 银行账户
+  
+  purchaseOrders PurchaseOrder[]
+  processOrders  ProcessOrder[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("suppliers")
+}
+
+// 3. 采购管理 - 采购单
+model PurchaseOrder {
+  id              String        @id @default(cuid())
+  orderNumber     String        @unique // 采购单号
+  supplierId      String        // 供应商ID
+  additionalPrice Decimal       @default(0) @db.Decimal(10, 2) // 附加价格（运费等）
+  totalAmount     Decimal       @db.Decimal(10, 2) // 采购单总价
+  paymentStatus   PaymentStatus @default(UNPAID) // 付款状态
+  deliveryStatus  DeliveryStatus @default(NOT_DELIVERED) // 到货状态
+  
+  supplier        Supplier      @relation(fields: [supplierId], references: [id])
+  items           PurchaseOrderItem[]
+  rawMaterialBatches RawMaterialBatch[]
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@map("purchase_orders")
+}
+
+// 采购单明细
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  purchaseOrderId String        // 采购单ID
+  productId       String        // 产品SKU ID
+  quantity        Decimal       @db.Decimal(10, 3) // 采购数量
+  unitPrice       Decimal       @db.Decimal(10, 2) // 采购单价
+  totalPrice      Decimal       @db.Decimal(10, 2) // SKU总价
+  
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product         Product       @relation(fields: [productId], references: [id])
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@map("purchase_order_items")
+}
+
+// 4. 产品加工 - 加工单
+model ProcessOrder {
+  id                String           @id @default(cuid())
+  orderNumber       String           @unique // 加工单号
+  productId         String           // 成品SKU ID
+  plannedQuantity   Decimal          @db.Decimal(10, 3) // 计划生产数量
+  actualQuantity    Decimal?         @db.Decimal(10, 3) // 实际产出数量
+  materialCost      Decimal          @db.Decimal(10, 2) // 物料总成本
+  processingFee     Decimal          @default(0) @db.Decimal(10, 2) // 其他加工费用
+  totalCost         Decimal          @db.Decimal(10, 2) // 加工单总成本
+  supplierId        String?          // 加工供应商ID（用于加工费结算）
+  paymentStatus     PaymentStatus    @default(UNPAID) // 付款状态（针对加工费）
+  status            ProcessingStatus @default(PENDING) // 加工状态
+  
+  product           Product          @relation(fields: [productId], references: [id])
+  supplier          Supplier?        @relation(fields: [supplierId], references: [id])
+  materialUsages    MaterialUsage[]  // 物料使用记录
+  finishedProductBatches FinishedProductBatch[]
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  @@map("process_orders")
+}
+
+// 物料使用记录（FIFO领料记录）
+model MaterialUsage {
+  id                   String             @id @default(cuid())
+  processOrderId       String             // 加工单ID
+  rawMaterialBatchId   String             // 原材料批次ID
+  usedQuantity         Decimal            @db.Decimal(10, 3) // 使用数量
+  unitCost             Decimal            @db.Decimal(10, 2) // 批次单价
+  totalCost            Decimal            @db.Decimal(10, 2) // 使用总成本
+  
+  processOrder         ProcessOrder       @relation(fields: [processOrderId], references: [id], onDelete: Cascade)
+  rawMaterialBatch     RawMaterialBatch   @relation(fields: [rawMaterialBatchId], references: [id])
+  
+  createdAt            DateTime           @default(now())
+  
+  @@map("material_usages")
+}
+
+// 5. 原材料库存管理（批次库存）
+model RawMaterialBatch {
+  id                String          @id @default(cuid())
+  batchNumber       String          @unique // 批次号
+  productId         String          // 原材料SKU ID
+  purchaseOrderId   String          // 关联采购单ID
+  inboundQuantity   Decimal         @db.Decimal(10, 3) // 入库数量
+  remainingQuantity Decimal         @db.Decimal(10, 3) // 剩余数量
+  actualUnitPrice   Decimal         @db.Decimal(10, 2) // 实际入库单价（含分摊费用）
+  inboundDate       DateTime        @default(now()) // 入库日期
+  
+  product           Product         @relation(fields: [productId], references: [id])
+  purchaseOrder     PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id])
+  materialUsages    MaterialUsage[]
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@map("raw_material_batches")
+}
+
+// 6. 成品库存管理（批次库存）
+model FinishedProductBatch {
+  id                String       @id @default(cuid())
+  batchNumber       String       @unique // 批次号
+  productId         String       // 成品SKU ID
+  processOrderId    String       // 关联加工单ID
+  inboundQuantity   Decimal      @db.Decimal(10, 3) // 入库数量
+  remainingQuantity Decimal      @db.Decimal(10, 3) // 剩余数量
+  actualUnitCost    Decimal      @db.Decimal(10, 2) // 实际单位成本
+  inboundDate       DateTime     @default(now()) // 入库日期
+  
+  product           Product      @relation(fields: [productId], references: [id])
+  processOrder      ProcessOrder @relation(fields: [processOrderId], references: [id])
+  
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  @@map("finished_product_batches")
+}
+
+// 7. 操作日志
+model OperationLog {
+  id            String        @id @default(cuid())
+  userId        String        // 操作用户ID
+  userName      String        // 操作用户姓名
+  module        String        // 操作模块
+  operationType OperationType // 操作类型
+  objectId      String        // 操作对象ID
+  objectType    String        // 操作对象类型
+  oldValue      Json?         // 修改前的值（JSON格式）
+  newValue      Json?         // 修改后的值（JSON格式）
+  description   String        // 操作描述
+  
+  createdAt     DateTime      @default(now())
+  
+  @@map("operation_logs")
+}

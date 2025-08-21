@@ -1,16 +1,12 @@
 import { 
   PurchaseOrder, 
-  PurchaseOrderFilters, 
-  PurchaseOrderResponse, 
-  PurchaseOrderFormData,
-  PurchasePlan,
-  PurchasePlanFilters,
-  PurchasePlanResponse,
-  PurchasePlanFormData,
-  PurchaseOrderStatus,
-  PaymentStatus,
-  DeliveryStatus
+  PurchaseOrderTableItem, 
+  PurchaseOrderFilters,
+  PurchaseOrdersResponse,
+  PurchaseOrderFormData
 } from '@/types/purchase';
+import { PURCHASE_ORDER_PREFIX } from '@/constants/purchase';
+import { processPurchaseInbound } from './purchase-inbound';
 
 // 模拟采购单数据
 const mockPurchaseOrders: PurchaseOrder[] = [

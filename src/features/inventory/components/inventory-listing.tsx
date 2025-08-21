@@ -1,4 +1,4 @@
-import { InventoryTableItem } from '@/types/inventory';
+import { InventoryTableItem, type InventoryFilters } from '@/types/inventory';
 import { fakeInventoryApi } from '@/lib/mock-inventory';
 import { searchParamsCache } from '@/lib/searchparams';
 import { InventoryTable } from './inventory-tables';
@@ -14,11 +14,18 @@ export default async function InventoryListingPage({}: InventoryListingPageProps
   const lowStock = searchParamsCache.get('lowStock');
   const hasStock = searchParamsCache.get('hasStock');
 
+  // 将 productType 收窄到允许的联合类型
+  const allowedProductTypes = ['raw_material', 'finished_product', 'all'] as const;
+  const normalizedProductType: InventoryFilters['productType'] =
+    allowedProductTypes.includes(productType as any)
+      ? (productType as (typeof allowedProductTypes)[number])
+      : undefined;
+
   const filters = {
     page,
-    limit: pageLimit,
+    limit: pageLimit ?? undefined,
     ...(search && typeof search === 'string' && { search }),
-    ...(productType && typeof productType === 'string' && { productType }),
+    ...(normalizedProductType && { productType: normalizedProductType }),
     ...(lowStock && { lowStock: lowStock === 'true' }),
     ...(hasStock && { hasStock: hasStock === 'true' })
   };

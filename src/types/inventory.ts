@@ -178,7 +178,7 @@ export interface InventoryResponse {
 }
 
 export interface BatchResponse {
-  batches: RawMaterialBatch[] | FinishedProductBatch[];
+  batches: (RawMaterialBatch | FinishedProductBatch)[];
   total_batches: number;
   page: number;
   limit: number;

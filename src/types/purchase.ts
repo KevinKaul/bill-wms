@@ -5,7 +5,10 @@ export type PurchaseOrderStatus = 'draft' | 'confirmed' | 'completed' | 'cancell
 export type PaymentStatus = 'unpaid' | 'paid';
 
 // 到货状态
-export type DeliveryStatus = 'pending' | 'delivered';
+export type DeliveryStatus = 'pending' | 'delivered' | 'arrived';
+
+// 兼容字段别名
+export type ArrivalStatus = DeliveryStatus;
 
 // 采购单明细项
 export interface PurchaseOrderItem {
@@ -31,6 +34,7 @@ export interface PurchaseOrder {
   status: PurchaseOrderStatus; // 采购单状态
   paymentStatus: PaymentStatus; // 付款状态
   deliveryStatus: DeliveryStatus; // 到货状态
+  arrivalStatus: DeliveryStatus; // 到货状态别名，兼容性字段
   additionalCost: number; // 附加价格（如运费）
   subtotal: number; // 所有SKU总价之和
   totalAmount: number; // 采购单总价 (subtotal + additionalCost)

@@ -45,6 +45,9 @@ model Product {
   name             String      // 产品名称
   image            String?     // 产品图片URL
   type             ProductType // 产品类型
+  description      String?     // 产品描述
+  category_id      String?     // 分类ID
+  status           String      @default("active") // 状态：active或inactive
   
   // 原材料字段
   referencePurchasePrice Decimal? @db.Decimal(10, 2) // 参考采购单价
@@ -56,9 +59,13 @@ model Product {
   bomItems         BOMItem[]   @relation("ProductBOM") // 作为成品的BOM构成
   bomComponents    BOMItem[]   @relation("ComponentProduct") // 作为原材料的BOM组件
   purchaseItems    PurchaseOrderItem[]
+  purchasePlanItems PurchasePlanItem[]
   rawMaterialBatches RawMaterialBatch[]
   finishedProductBatches FinishedProductBatch[]
   processOrders    ProcessOrder[]
+  inventoryAdjustments InventoryAdjustment[]
+  inventoryMovements InventoryMovement[]
+  inventoryLevels InventoryLevel[]
   
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
@@ -89,6 +96,12 @@ model Supplier {
   code        String @unique // 简称/代号
   fullName    String // 供应商全称
   account     String? // 银行账户
+  type        String @default("material") // 类型：material、processing、both
+  contact_person String? // 联系人
+  phone       String? // 电话
+  email       String? // 邮箱
+  address     String? // 地址
+  status      String @default("active") // 状态：active或inactive
   
   purchaseOrders PurchaseOrder[]
   processOrders  ProcessOrder[]
@@ -99,6 +112,47 @@ model Supplier {
   @@map("suppliers")
 }
 
+// 3. 采购管理 - 采购计划
+model PurchasePlan {
+  id              String    @id @default(cuid())
+  planNumber      String    @unique // 计划编号
+  title           String    // 计划标题
+  status          String    @default("draft") // 状态：draft、approved、executed、cancelled
+  totalEstimatedAmount Decimal @db.Decimal(10, 2) // 预估总金额
+  remark          String?   // 备注
+  createdById     String    // 创建人 ID
+  createdByName   String    // 创建人名称
+  approvedById    String?   // 批准人 ID
+  approvedByName  String?   // 批准人名称
+  executedAt      DateTime? // 执行时间
+  
+  items           PurchasePlanItem[] // 计划明细项
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("purchase_plans")
+}
+
+// 采购计划明细项
+model PurchasePlanItem {
+  id                String      @id @default(cuid())
+  purchasePlanId    String      // 采购计划ID
+  productId         String      // 产品ID
+  quantity          Decimal     @db.Decimal(10, 3) // 计划采购数量
+  estimatedUnitPrice Decimal    @db.Decimal(10, 2) // 预估单价
+  estimatedTotalPrice Decimal   @db.Decimal(10, 2) // 预估总价
+  remark            String?     // 备注
+  
+  purchasePlan      PurchasePlan @relation(fields: [purchasePlanId], references: [id], onDelete: Cascade)
+  product           Product     @relation(fields: [productId], references: [id])
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@map("purchase_plan_items")
+}
+
 // 3. 采购管理 - 采购单
 model PurchaseOrder {
   id              String        @id @default(cuid())
@@ -106,8 +160,13 @@ model PurchaseOrder {
   supplierId      String        // 供应商ID
   additionalPrice Decimal       @default(0) @db.Decimal(10, 2) // 附加价格（运费等）
   totalAmount     Decimal       @db.Decimal(10, 2) // 采购单总价
+  status          String        @default("draft") // 状态：draft、confirmed、completed、cancelled
   paymentStatus   PaymentStatus @default(UNPAID) // 付款状态
   deliveryStatus  DeliveryStatus @default(NOT_DELIVERED) // 到货状态
+  orderDate       DateTime      @default(now()) // 订单日期
+  expectedDeliveryDate DateTime? // 预计到货日期
+  actualDeliveryDate   DateTime? // 实际到货日期
+  remark          String?       // 备注
   
   supplier        Supplier      @relation(fields: [supplierId], references: [id])
   items           PurchaseOrderItem[]
@@ -150,6 +209,11 @@ model ProcessOrder {
   supplierId        String?          // 加工供应商ID（用于加工费结算）
   paymentStatus     PaymentStatus    @default(UNPAID) // 付款状态（针对加工费）
   status            ProcessingStatus @default(PENDING) // 加工状态
+  orderDate         DateTime         @default(now()) // 订单日期
+  startDate         DateTime?        // 开始生产日期
+  completionDate    DateTime?        // 完成日期
+  qualityStatus     String?          // 质量状态：passed或failed
+  remark            String?          // 备注
   
   product           Product          @relation(fields: [productId], references: [id])
   supplier          Supplier?        @relation(fields: [supplierId], references: [id])
@@ -220,7 +284,98 @@ model FinishedProductBatch {
   @@map("finished_product_batches")
 }
 
-// 7. 操作日志
+// 7. 库存位置
+model Location {
+  id              String    @id @default(cuid())
+  code            String    @unique // 位置编码
+  name            String    // 位置名称
+  type            String    // 位置类型：warehouse、shelf、bin
+  parentId        String?   // 父级位置 ID
+  capacity        Decimal?  @db.Decimal(10, 3) // 容量
+  capacityUnit    String?   // 容量单位
+  status          String    @default("active") // 状态：active、inactive
+  remark          String?   // 备注
+  
+  parent          Location? @relation("LocationHierarchy", fields: [parentId], references: [id])
+  children        Location[] @relation("LocationHierarchy")
+  
+  // 库存移动关系
+  fromMovements   InventoryMovement[] @relation("FromLocation")
+  toMovements     InventoryMovement[] @relation("ToLocation")
+  inventoryLevels InventoryLevel[]
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("locations")
+}
+
+// 8. 库存调整
+model InventoryAdjustment {
+  id            String    @id @default(cuid())
+  productId     String    // 产品ID
+  type          String    // 类型：increase或decrease
+  quantity      Decimal   @db.Decimal(10, 3) // 调整数量
+  unitCost      Decimal?  @db.Decimal(10, 2) // 单位成本
+  totalCost     Decimal?  @db.Decimal(10, 2) // 总成本
+  reason        String    // 原因
+  remark        String?   // 备注
+  createdById   String    // 创建人
+  
+  product       Product   @relation(fields: [productId], references: [id])
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@map("inventory_adjustments")
+}
+
+// 9. 库存水平
+model InventoryLevel {
+  id              String    @id @default(cuid())
+  productId       String    // 产品ID
+  locationId      String    // 位置ID
+  batchId         String?   // 批次ID
+  quantity        Decimal   @db.Decimal(10, 3) // 库存数量
+  reservedQuantity Decimal  @default(0) @db.Decimal(10, 3) // 预留数量
+  availableQuantity Decimal @default(0) @db.Decimal(10, 3) // 可用数量
+  unitCost        Decimal?  @db.Decimal(10, 2) // 单位成本
+  totalCost       Decimal?  @db.Decimal(10, 2) // 总成本
+  
+  product         Product   @relation(fields: [productId], references: [id])
+  location        Location  @relation(fields: [locationId], references: [id])
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@unique([productId, locationId, batchId])
+  @@map("inventory_levels")
+}
+
+// 10. 库存移动
+model InventoryMovement {
+  id              String    @id @default(cuid())
+  productId       String    // 产品ID
+  batchId         String?   // 批次ID
+  movementType    String    // 移动类型：inbound、outbound、transfer
+  sourceType      String    // 来源类型：purchase、production、adjustment、transfer
+  sourceReference String    // 来源引用（如采购单号、加工单号等）
+  quantity        Decimal   @db.Decimal(10, 3) // 移动数量
+  unitCost        Decimal?  @db.Decimal(10, 2) // 单位成本
+  totalCost       Decimal?  @db.Decimal(10, 2) // 总成本
+  fromLocationId  String?   // 来源位置ID
+  toLocationId    String?   // 目标位置ID
+  
+  product         Product   @relation(fields: [productId], references: [id])
+  fromLocation    Location? @relation("FromLocation", fields: [fromLocationId], references: [id])
+  toLocation      Location? @relation("ToLocation", fields: [toLocationId], references: [id])
+  
+  createdAt       DateTime  @default(now())
+  
+  @@map("inventory_movements")
+}
+
+// 11. 操作日志
 model OperationLog {
   id            String        @id @default(cuid())
   userId        String        // 操作用户ID

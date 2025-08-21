@@ -468,6 +468,11 @@ export async function getBatches(params: {
     const aValue = sort === 'inboundDate' ? a.inboundDate.getTime() : a[sort as keyof typeof a];
     const bValue = sort === 'inboundDate' ? b.inboundDate.getTime() : b[sort as keyof typeof b];
     
+    // 处理可能的 undefined 值
+    if (aValue === undefined && bValue === undefined) return 0;
+    if (aValue === undefined) return order === 'asc' ? -1 : 1;
+    if (bValue === undefined) return order === 'asc' ? 1 : -1;
+    
     if (order === 'asc') {
       return aValue > bValue ? 1 : -1;
     } else {
@@ -561,14 +566,33 @@ export async function getMovements(params: {
   
   // 排序
   movements.sort((a, b) => {
-    const aValue = sort === 'createdAt' ? a.createdAt.getTime() : a[sort as keyof typeof a];
-    const bValue = sort === 'createdAt' ? b.createdAt.getTime() : b[sort as keyof typeof b];
-    
-    if (order === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
+    type Comparable = number | string | null;
+    const getComparable = (m: typeof a): Comparable => {
+      const raw = sort === 'createdAt' ? m.createdAt : (m as any)?.[sort];
+      if (raw == null) return null;
+      if (raw instanceof Date) return raw.getTime();
+      if (typeof raw === 'number') return raw;
+      if (typeof raw === 'string') return raw.toLowerCase();
+      return null;
+    };
+
+    const av = getComparable(a);
+    const bv = getComparable(b);
+
+    // 处理空值：将 null 视为最小值
+    if (av === null && bv === null) return 0;
+    if (av === null) return order === 'asc' ? -1 : 1;
+    if (bv === null) return order === 'asc' ? 1 : -1;
+
+    if (typeof av === 'string' && typeof bv === 'string') {
+      const cmp = av.localeCompare(bv);
+      return order === 'asc' ? cmp : -cmp;
     }
+
+    // 数值比较（包括日期被转换为时间戳）
+    const diff = (av as number) - (bv as number);
+    if (diff === 0) return 0;
+    return order === 'asc' ? (diff > 0 ? 1 : -1) : (diff > 0 ? -1 : 1);
   });
   
   // 分页

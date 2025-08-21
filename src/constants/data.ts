@@ -22,7 +22,7 @@ export const navItems: NavItem[] = [
     items: [] // Empty array as there are no child items for Dashboard
   },
   {
-    title: 'Product',
+    title: '产品管理',
     url: '/dashboard/product',
     icon: 'product',
     shortcut: ['p', 'p'],
@@ -30,7 +30,88 @@ export const navItems: NavItem[] = [
     items: [] // No child items
   },
   {
-    title: 'Supplier',
+    title: '采购管理',
+    url: '#',
+    icon: 'billing',
+    isActive: false,
+    items: [
+      {
+        title: '采购计划',
+        url: '/dashboard/purchase/plan',
+        icon: 'page'
+      },
+      {
+        title: '采购单',
+        url: '/dashboard/purchase/order',
+        icon: 'post'
+      }
+    ]
+  },
+  {
+    title: '加工管理',
+    url: '#',
+    icon: 'settings',
+    isActive: false,
+    items: [
+      {
+        title: '加工单',
+        url: '/dashboard/production/order',
+        icon: 'settings'
+      }
+    ]
+  },
+  {
+    title: '库存管理',
+    url: '#',
+    icon: 'product',
+    isActive: false,
+    items: [
+      {
+        title: '库存管理',
+        url: '/dashboard/inventory',
+        icon: 'product',
+        items: [
+          {
+            title: '批次管理',
+            url: '/dashboard/inventory/batch'
+          },
+          {
+            title: '原材料批次',
+            url: '/dashboard/inventory/batch/raw-material'
+          },
+          {
+            title: '成品批次',
+            url: '/dashboard/inventory/batch/finished-product'
+          },
+          {
+            title: '库存调整',
+            url: '/dashboard/inventory/adjustment'
+          },
+          {
+            title: '库存移动',
+            url: '/dashboard/inventory/movement'
+          }
+        ]
+      },
+      {
+        title: '批次管理',
+        url: '/dashboard/inventory/batch',
+        icon: 'kanban'
+      },
+      {
+        title: '移动记录',
+        url: '/dashboard/inventory/movement',
+        icon: 'arrowRight'
+      },
+      {
+        title: '库存调整',
+        url: '/dashboard/inventory/adjust',
+        icon: 'userPen'
+      }
+    ]
+  },
+  {
+    title: '供应商管理',
     url: '/dashboard/supplier',
     icon: 'supplier',
     shortcut: ['s', 's'],

@@ -2,7 +2,10 @@
 
 import { BatchTable } from './batch-tables';
 import { getBatches } from '@/lib/mock-inventory';
+import { getRawMaterialBatches } from '@/lib/purchase-inbound';
 import { BatchFilters } from '@/types/inventory';
+import { Button } from '@/components/ui/button';
+import { Plus, Download } from 'lucide-react';
 
 interface BatchListingPageProps {
   searchParams: {

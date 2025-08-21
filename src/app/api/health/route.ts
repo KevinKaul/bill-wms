@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '../utils/auth';
+import { getCurrentUser } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 
 /**
  * GET /api/health - 健康检查接口
@@ -25,7 +25,6 @@ export async function GET() {
       data: healthData
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Health check error:', error);
     return NextResponse.json(
       {

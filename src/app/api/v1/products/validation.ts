@@ -17,6 +17,7 @@ export const createProductSchema = z.discriminatedUnion('type', [
       .positive('参考采购单价必须大于0')
       .optional()
   }),
+  
   // 组合产品验证
   z.object({
     sku: z.string().min(1, 'SKU不能为空').max(50, 'SKU长度不能超过50字符'),
@@ -96,19 +97,3 @@ export const idParamSchema = z.object({
   id: z.string().min(1, '产品ID不能为空')
 });
 
-/**
- * 验证请求数据
- */
-export function validateRequest<T>(schema: z.ZodSchema<T>, data: unknown): T {
-  try {
-    return schema.parse(data);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const message = error.errors
-        .map((err) => `${err.path.join('.')}: ${err.message}`)
-        .join('; ');
-      throw new Error(`VALIDATION_ERROR: ${message}`);
-    }
-    throw error;
-  }
-}

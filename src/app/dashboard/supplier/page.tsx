@@ -1,27 +1,26 @@
-import PageContainer from '@/components/layout/page-container';
+import Link from 'next/link';
+import { Plus as IconPlus } from 'lucide-react';
+import { Suspense } from 'react';
+
 import { buttonVariants } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
-import ProductListingPage from '@/features/products/components/product-listing';
+import PageContainer from '@/components/layout/page-container';
 import { searchParamsCache } from '@/lib/searchparams';
 import { cn } from '@/lib/utils';
-import { IconPlus } from '@tabler/icons-react';
-import Link from 'next/link';
-import { SearchParams } from 'nuqs/server';
-import { Suspense } from 'react';
-
-export const metadata = {
-  title: '产品管理 - 仓库管理系统'
-};
+import SupplierListingPage from '@/features/suppliers/components/supplier-listing';
 
 type pageProps = {
-  searchParams: Promise<SearchParams>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export const metadata = {
+  title: '供应商管理'
 };
 
 export default async function Page(props: pageProps) {
   const searchParams = await props.searchParams;
-  // Allow nested RSCs to access the search params (in a type-safe way)
   searchParamsCache.parse(searchParams);
 
   return (
@@ -29,23 +28,23 @@ export default async function Page(props: pageProps) {
       <div className='flex flex-1 flex-col space-y-4'>
         <div className='flex items-start justify-between'>
           <Heading
-            title='产品管理'
-            description='管理原材料和组合产品，包括SKU、价格、BOM等信息'
+            title='供应商管理'
+            description='管理供应商基础信息，包括代号、名称、联系方式等'
           />
           <Link
-            href='/dashboard/product/new'
+            href='/dashboard/supplier/new'
             className={cn(buttonVariants(), 'text-xs md:text-sm')}
           >
-            <IconPlus className='mr-2 h-4 w-4' /> 新增产品
+            <IconPlus className='mr-2 h-4 w-4' /> 新增供应商
           </Link>
         </div>
         <Separator />
         <Suspense
           fallback={
-            <DataTableSkeleton columnCount={6} rowCount={10} filterCount={3} />
+            <DataTableSkeleton columnCount={7} rowCount={10} filterCount={2} />
           }
         >
-          <ProductListingPage />
+          <SupplierListingPage />
         </Suspense>
       </div>
     </PageContainer>

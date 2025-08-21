@@ -1,5 +1,10 @@
 'use client';
-import { AlertModal } from '@/components/modal/alert-modal';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { MoreHorizontal, Eye, Edit, Copy, Trash } from 'lucide-react';
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,14 +14,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { ProductTableItem } from '@/types/product';
-import { Edit, MoreHorizontal, Trash, Eye, Copy } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { AlertModal } from '@/components/modal/alert-modal';
+import { SupplierTableItem } from '@/types/supplier';
 
 interface CellActionProps {
-  data: ProductTableItem;
+  data: SupplierTableItem;
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
@@ -27,8 +29,8 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const onConfirm = async () => {
     try {
       setLoading(true);
-      // TODO: 实现删除产品逻辑
-      toast.success('产品已删除');
+      // TODO: 实现删除供应商逻辑
+      toast.success('供应商已删除');
       setOpen(false);
       // 刷新页面或更新数据
     } catch (error) {
@@ -39,8 +41,8 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   };
 
   const onCopy = () => {
-    navigator.clipboard.writeText(data.sku);
-    toast.success('已复制SKU到剪贴板');
+    navigator.clipboard.writeText(data.code);
+    toast.success('已复制供应商代号到剪贴板');
   };
 
   return (
@@ -60,27 +62,21 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end'>
           <DropdownMenuLabel>操作</DropdownMenuLabel>
-          
           <DropdownMenuItem onClick={onCopy}>
-            <Copy className='mr-2 h-4 w-4' /> 复制SKU
+            <Copy className='mr-2 h-4 w-4' /> 复制代号
           </DropdownMenuItem>
-          
           <DropdownMenuSeparator />
-          
           <DropdownMenuItem
-            onClick={() => router.push(`/dashboard/product/${data.id}`)}
+            onClick={() => router.push(`/dashboard/supplier/${data.id}`)}
           >
             <Eye className='mr-2 h-4 w-4' /> 查看详情
           </DropdownMenuItem>
-          
           <DropdownMenuItem
-            onClick={() => router.push(`/dashboard/product/${data.id}/edit`)}
+            onClick={() => router.push(`/dashboard/supplier/${data.id}/edit`)}
           >
             <Edit className='mr-2 h-4 w-4' /> 编辑
           </DropdownMenuItem>
-          
           <DropdownMenuSeparator />
-          
           <DropdownMenuItem 
             onClick={() => setOpen(true)}
             className='text-red-600 focus:text-red-600'

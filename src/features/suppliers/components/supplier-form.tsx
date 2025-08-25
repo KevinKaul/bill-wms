@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { SupplierFormData } from '@/types/supplier';
 import { SUPPLIER_VALIDATION } from '@/constants/supplier';
-import { fakeSuppliersApi } from '@/lib/mock-suppliers';
+import { suppliersApi } from '@/lib/api-client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
@@ -97,14 +97,19 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
     try {
       setLoading(true);
       
+      let response;
       if (isEdit && initialData?.id) {
-        await fakeSuppliersApi.updateSupplier(initialData.id, values);
+        response = await suppliersApi.updateSupplier(initialData.id, values);
       } else {
-        await fakeSuppliersApi.createSupplier(values);
+        response = await suppliersApi.createSupplier(values);
       }
       
-      toast.success(toastMessage);
-      router.push('/dashboard/supplier');
+      if (response.success) {
+        toast.success(toastMessage);
+        router.push('/dashboard/supplier');
+      } else {
+        toast.error(response.error?.message || (isEdit ? '更新失败' : '创建失败'));
+      }
     } catch (error) {
       toast.error(isEdit ? '更新失败，请重试' : '创建失败，请重试');
     } finally {

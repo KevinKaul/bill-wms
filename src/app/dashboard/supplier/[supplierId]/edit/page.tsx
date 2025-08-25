@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import PageContainer from '@/components/layout/page-container';
 import { SupplierForm } from '@/features/suppliers/components/supplier-form';
-import { fakeSuppliersApi } from '@/lib/mock-suppliers';
+import { suppliersApi } from '@/lib/api-client';
 
 export const metadata = {
   title: '编辑供应商'
@@ -16,11 +16,13 @@ interface PageProps {
 
 export default async function Page({ params }: PageProps) {
   const { supplierId } = await params;
-  const supplier = await fakeSuppliersApi.getSupplierById(supplierId);
+  const response = await suppliersApi.getSupplier(supplierId);
 
-  if (!supplier) {
+  if (!response.success || !response.data) {
     notFound();
   }
+
+  const supplier = response.data as any;
 
   return (
     <PageContainer scrollable={true}>

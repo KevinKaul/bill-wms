@@ -1,5 +1,5 @@
 import { SupplierTableItem } from '@/types/supplier';
-import { fakeSuppliersApi } from '@/lib/mock-suppliers';
+import { suppliersApi } from '@/lib/api-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { SupplierTable } from './supplier-tables';
 
@@ -13,22 +13,32 @@ export default async function SupplierListingPage({}: SupplierListingPageProps) 
 
   const filters = {
     page,
-    limit: pageLimit,
-    ...(search && typeof search === 'string' && { search })
+    per_page: pageLimit,
+    ...(search && typeof search === 'string' && { search }),
+    sort: 'createdAt',
+    order: 'desc' as 'asc' | 'desc'
   };
 
-  const data = await fakeSuppliersApi.getSuppliers(filters);
-  const totalSuppliers = data.total_suppliers;
-  const suppliers: SupplierTableItem[] = data.suppliers.map(supplier => ({
+  const response = await suppliersApi.getSuppliers(filters);
+  
+  if (!response.success) {
+    throw new Error(response.error?.message || '获取供应商列表失败');
+  }
+
+  const totalSuppliers = (response.data as any)?.total || 0;
+  const suppliers: SupplierTableItem[] = (response.data as any)?.suppliers?.map((supplier: any) => ({
     id: supplier.id,
     code: supplier.code,
     name: supplier.name,
-    account: supplier.account,
-    contactPerson: supplier.contactPerson,
+    type: supplier.type,
+    contact_person: supplier.contact_person,
     phone: supplier.phone,
     email: supplier.email,
-    createdAt: supplier.createdAt.toISOString()
-  }));
+    address: supplier.address,
+    status: supplier.status,
+    created_at: supplier.created_at,
+    updated_at: supplier.updated_at
+  })) || [];
 
   return (
     <SupplierTable data={suppliers} totalData={totalSuppliers} />

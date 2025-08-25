@@ -1,5 +1,5 @@
 import { ProductTableItem, ProductType } from '@/types/product';
-import { fakeProductsApi } from '@/lib/mock-products';
+import { productsApi } from '@/lib/api-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { ProductTable } from './product-tables';
 import { columns } from './product-tables/columns';
@@ -15,14 +15,34 @@ export default async function ProductListingPage({}: ProductListingPage) {
 
   const filters = {
     page,
-    limit: pageLimit,
+    pageSize: pageLimit,
     ...(search && typeof search === 'string' && { search }),
-    ...(productType && { type: productType as ProductType })
+    ...(productType && { type: productType as ProductType }),
+    sortBy: 'createdAt',
+    sortOrder: 'desc' as 'asc' | 'desc'
   };
 
-  const data = await fakeProductsApi.getProducts(filters);
-  const totalProducts = data.total_products;
-  const products: ProductTableItem[] = data.products;
+  const response = await productsApi.getProducts(filters);
+  
+  if (!response.success) {
+    throw new Error(response.error?.message || '获取产品列表失败');
+  }
+
+  const totalProducts = (response.data as any)?.total || 0;
+  const products: ProductTableItem[] = (response.data as any)?.products?.map((product: any) => ({
+    id: product.id,
+    sku: product.sku,
+    name: product.name,
+    type: product.type,
+    image_url: product.image_url,
+    reference_purchase_price: product.reference_purchase_price,
+    guide_unit_price: product.guide_unit_price,
+    calculated_cost: product.calculated_cost,
+    bom_components_count: product.bom_components_count,
+    status: product.status,
+    created_at: product.created_at,
+    updated_at: product.updated_at
+  })) || [];
 
   return (
     <ProductTable

@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ProductTableItem } from '@/types/product';
+import { productsApi } from '@/lib/api-client';
 import { Edit, MoreHorizontal, Trash, Eye, Copy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -27,11 +28,18 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const onConfirm = async () => {
     try {
       setLoading(true);
-      // TODO: 实现删除产品逻辑
-      toast.success('产品已删除');
-      setOpen(false);
-      // 刷新页面或更新数据
+      const response = await productsApi.deleteProduct(data.id);
+      
+      if (response.success) {
+        toast.success('产品已删除');
+        setOpen(false);
+        // 刷新页面
+        router.refresh();
+      } else {
+        toast.error(response.error?.message || '删除失败');
+      }
     } catch (error) {
+      console.error('删除产品错误:', error);
       toast.error('删除失败，请重试');
     } finally {
       setLoading(false);

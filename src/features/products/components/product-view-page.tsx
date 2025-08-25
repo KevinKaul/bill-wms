@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { PRODUCT_TYPE_LABELS, PRODUCT_TYPE_COLORS, DEFAULT_PRODUCT_IMAGE } from '@/constants/product';
-import { fakeProductsApi } from '@/lib/mock-products';
+import { productsApi } from '@/lib/api-client';
 import { Edit, Package, Calendar, DollarSign, Layers } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,14 +18,29 @@ type ProductViewPageProps = {
 export default async function ProductViewPage({
   productId
 }: ProductViewPageProps) {
-  const product = await fakeProductsApi.getProductById(productId);
+  const response = await productsApi.getProduct(productId);
   
-  if (!product) {
+  if (!response.success || !response.data) {
     notFound();
   }
 
-  const typeLabel = PRODUCT_TYPE_LABELS[product.type];
-  const typeVariant = PRODUCT_TYPE_COLORS[product.type];
+  const productData = (response.data as any).product;
+  const product = {
+    id: productData.id,
+    sku: productData.sku,
+    name: productData.name,
+    type: productData.type,
+    image: productData.image_url,
+    referencePurchasePrice: productData.reference_purchase_price,
+    guidancePrice: productData.guide_unit_price,
+    calculatedCost: productData.calculated_cost,
+    bomItemsCount: productData.bom_components_count || 0,
+    createdAt: new Date(productData.created_at),
+    updatedAt: new Date(productData.updated_at)
+  };
+
+  const typeLabel = PRODUCT_TYPE_LABELS[product.type as keyof typeof PRODUCT_TYPE_LABELS];
+  const typeVariant = PRODUCT_TYPE_COLORS[product.type as keyof typeof PRODUCT_TYPE_COLORS];
 
   return (
     <div className='space-y-6'>

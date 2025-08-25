@@ -21,9 +21,19 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ProductFormData, ProductType } from '@/types/product';
 import { PRODUCT_TYPE_OPTIONS, PRODUCT_VALIDATION } from '@/constants/product';
-import { fakeProductsApi } from '@/lib/mock-products';
+import { productsApi } from '@/lib/api-client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
@@ -69,6 +79,8 @@ export default function ProductForm({
 }: ProductFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [createdProductName, setCreatedProductName] = useState('');
 
   const defaultValues: Partial<FormValues> = {
     sku: initialData?.sku || '',
@@ -88,15 +100,59 @@ export default function ProductForm({
   const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
-      // TODO: 实现API调用保存产品数据
-      await fakeProductsApi.createProduct(values);
-      toast.success(isEdit ? '产品更新成功' : '产品创建成功');
-      router.push('/dashboard/product');
+      
+      // 准备产品数据
+      const productData = {
+        ...values,
+        // 处理图片字段
+        // 1. 如果有新上传的图片，使用上传后的URL
+        // 2. 如果是编辑模式且没有新上传图片，保留原有图片URL
+        // 3. 如果没有图片，则设置为null
+        image: values.image 
+          ? values.image[0]?.preview || null 
+          : (isEdit && initialData?.image) ? initialData.image : null
+      };
+      
+      // 调用真实API保存产品数据
+      let response;
+      
+      if (isEdit && initialData?.sku) {
+        response = await productsApi.updateProduct(initialData.sku, productData);
+      } else {
+        response = await productsApi.createProduct(productData);
+      }
+      
+      if (response.success) {
+        if (isEdit) {
+          toast.success('产品更新成功');
+          router.push('/dashboard/product');
+        } else {
+          // 创建成功，显示AlertDialog
+          setCreatedProductName(values.name);
+          setShowSuccessDialog(true);
+        }
+      } else {
+        toast.error(response.error?.message || (isEdit ? '更新失败' : '创建失败'));
+      }
     } catch (error) {
+      console.error('产品表单提交错误:', error);
       toast.error(isEdit ? '更新失败，请重试' : '创建失败，请重试');
     } finally {
       setLoading(false);
     }
+  };
+
+  // 处理AlertDialog选择
+  const handleGoToList = () => {
+    setShowSuccessDialog(false);
+    router.push('/dashboard/product');
+  };
+
+  const handleContinueCreate = () => {
+    setShowSuccessDialog(false);
+    // 重置表单
+    form.reset();
+    toast.success('表单已清空，可以继续创建新产品');
   };
 
   return (
@@ -151,35 +207,37 @@ export default function ProductForm({
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name='type'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>产品类型 *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder='选择产品类型' />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {PRODUCT_TYPE_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            <div className='flex flex-col'>
-                              <span>{option.label}</span>
-                              <span className='text-xs text-muted-foreground'>
-                                {option.description}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+                <FormField
+                  control={form.control}
+                  name='type'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>产品类型 *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='选择产品类型' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PRODUCT_TYPE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              <div className='flex flex-col'>
+                                <span>{option.label}</span>
+                                <span className='text-xs text-muted-foreground'>
+                                  {option.description}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
@@ -231,8 +289,11 @@ export default function ProductForm({
                               step='0.01'
                               placeholder='0.00'
                               className='pl-8'
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                              value={field.value ?? ''}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                field.onChange(value === '' ? null : parseFloat(value));
+                              }}
                             />
                           </div>
                         </FormControl>
@@ -262,8 +323,11 @@ export default function ProductForm({
                               step='0.01'
                               placeholder='0.00'
                               className='pl-8'
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                              value={field.value ?? ''}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                field.onChange(value === '' ? null : parseFloat(value));
+                              }}
                             />
                           </div>
                         </FormControl>
@@ -296,6 +360,26 @@ export default function ProductForm({
           </form>
         </Form>
       </CardContent>
+
+      {/* 产品创建成功对话框 */}
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>产品创建成功！</AlertDialogTitle>
+            <AlertDialogDescription>
+              产品 &ldquo;{createdProductName}&rdquo; 已成功创建。您希望接下来做什么？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleContinueCreate}>
+              继续创建新产品
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleGoToList}>
+              返回产品列表
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

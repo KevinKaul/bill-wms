@@ -143,20 +143,17 @@ export async function GET(request: NextRequest) {
 }
 
 // 更新产品
-export async function PUT(request: NextRequest) {
-  // 从 URL 中提取 ID 参数
-  const url = new URL(request.url);
-  const pathParts = url.pathname.split('/');
-  const id = pathParts[pathParts.length - 1];
-  
-  // 创建一个参数对象供验证使用
-  const params = { id };
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     // 验证用户身份
     await requireAuth(request);
 
-    // 验证ID参数
+    // 验证路径参数
     const { id } = validateRequest(idParamSchema, params);
+
 
     // 解析请求体
     const requestData = await request.json();
@@ -166,7 +163,7 @@ export async function PUT(request: NextRequest) {
 
     // 检查产品是否存在
     const existingProduct = await prisma.product.findUnique({
-      where: { id }
+      where: { sku: id }
     });
 
     if (!existingProduct) {

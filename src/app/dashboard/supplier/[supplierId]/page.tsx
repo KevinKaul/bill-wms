@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import PageContainer from '@/components/layout/page-container';
 import { SupplierViewPage } from '@/features/suppliers/components/supplier-view-page';
-import { fakeSuppliersApi } from '@/lib/mock-suppliers';
+import { suppliersApi } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const metadata = {
@@ -17,11 +17,13 @@ interface PageProps {
 }
 
 async function SupplierDetails({ supplierId }: { supplierId: string }) {
-  const supplier = await fakeSuppliersApi.getSupplierById(supplierId);
+  const response = await suppliersApi.getSupplier(supplierId);
 
-  if (!supplier) {
+  if (!response.success || !response.data) {
     notFound();
   }
+
+  const supplier = response.data as any;
 
   return <SupplierViewPage supplier={supplier} />;
 }

@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 
 /**
@@ -21,6 +21,6 @@ export async function requireAuth(req?: NextRequest) {
  * @returns 用户ID或null
  */
 export async function getCurrentUser() {
-  const { userId } = await auth();
-  return userId;
+  const user = await currentUser()
+  return user;
 }

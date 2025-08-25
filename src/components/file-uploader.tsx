@@ -113,14 +113,14 @@ export function FileUploader(props: FileUploaderProps) {
   });
 
   const onDrop = React.useCallback(
-    (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+    async (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       if (!multiple && maxFiles === 1 && acceptedFiles.length > 1) {
-        toast.error('Cannot upload more than 1 file at a time');
+        toast.error('不能一次上传多个文件');
         return;
       }
 
       if ((files?.length ?? 0) + acceptedFiles.length > maxFiles) {
-        toast.error(`Cannot upload more than ${maxFiles} files`);
+        toast.error(`不能上传超过 ${maxFiles} 个文件`);
         return;
       }
 
@@ -135,30 +135,54 @@ export function FileUploader(props: FileUploaderProps) {
       setFiles(updatedFiles);
 
       if (rejectedFiles.length > 0) {
-        rejectedFiles.forEach(({ file }) => {
-          toast.error(`File ${file.name} was rejected`);
+        rejectedFiles.forEach(({ file, errors }) => {
+          const errorMessages = errors.map(e => e.message).join(', ');
+          toast.error(`文件 ${file.name} 被拒绝: ${errorMessages}`);
         });
       }
 
-      if (
-        onUpload &&
-        updatedFiles.length > 0 &&
-        updatedFiles.length <= maxFiles
-      ) {
+      // 自动上传文件到服务器
+      if (updatedFiles.length > 0 && updatedFiles.length <= maxFiles) {
         const target =
-          updatedFiles.length > 0 ? `${updatedFiles.length} files` : `file`;
+          updatedFiles.length > 1 ? `${updatedFiles.length} 个文件` : `文件`;
 
-        toast.promise(onUpload(updatedFiles), {
-          loading: `Uploading ${target}...`,
-          success: () => {
-            setFiles([]);
-            return `${target} uploaded`;
-          },
-          error: `Failed to upload ${target}`
-        });
+        try {
+          // 对每个文件执行上传
+          for (const file of updatedFiles) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('folder', 'products');
+
+            await toast.promise(
+              fetch('/api/storage/upload', {
+                method: 'POST',
+                body: formData,
+              }).then(async (response) => {
+                if (!response.ok) {
+                  const error = await response.json();
+                  throw new Error(error.error?.message || '上传失败');
+                }
+                return response.json();
+              }),
+              {
+                loading: `正在上传${target}...`,
+                success: () => {
+                  // 如果有onUpload回调，调用它
+                  if (onUpload) {
+                    onUpload(updatedFiles);
+                  }
+                  // 返回成功消息
+                  return `${target}上传成功`;
+                },
+                error: (error) => `上传失败: ${error.message}`
+              }
+            );
+          }
+        } catch (error) {
+          console.error('上传文件失败:', error);
+        }
       }
     },
-
     [files, maxFiles, multiple, onUpload, setFiles]
   );
 

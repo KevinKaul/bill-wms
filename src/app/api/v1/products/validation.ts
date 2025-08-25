@@ -11,7 +11,12 @@ export const createProductSchema = z.discriminatedUnion('type', [
       .min(1, '产品名称不能为空')
       .max(200, '产品名称长度不能超过200字符'),
     type: z.literal(ProductType.RAW_MATERIAL),
-    image: z.string().url('图片URL格式不正确').optional(),
+    image: z
+      .union([
+        z.string().url({ message: '图片URL格式不正确' }),
+        z.null()
+      ])
+      .optional(),
     referencePurchasePrice: z
       .number()
       .positive('参考采购单价必须大于0')
@@ -26,7 +31,12 @@ export const createProductSchema = z.discriminatedUnion('type', [
       .min(1, '产品名称不能为空')
       .max(200, '产品名称长度不能超过200字符'),
     type: z.literal(ProductType.FINISHED_PRODUCT),
-    image: z.string().url('图片URL格式不正确').optional(),
+    image: z
+      .union([
+        z.string().url({ message: '图片URL格式不正确' }),
+        z.null()
+      ])
+      .optional(),
     guidancePrice: z.number().positive('指导单价必须大于0').optional(),
     bomItems: z
       .array(
@@ -53,7 +63,12 @@ export const updateProductSchema = z.object({
     .max(200, '产品名称长度不能超过200字符')
     .optional(),
   type: z.nativeEnum(ProductType).optional(),
-  image: z.string().url('图片URL格式不正确').optional(),
+  image: z
+    .union([
+      z.string().url({ message: '图片URL格式不正确' }),
+      z.null()
+    ])
+    .optional(),
   referencePurchasePrice: z
     .number()
     .positive('参考采购单价必须大于0')

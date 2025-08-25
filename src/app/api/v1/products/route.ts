@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { queryProductsSchema, createProductSchema } from "./validation";
+import {
+  queryProductsSchema,
+  createProductSchema,
+} from "@/lib/product-validation";
 import { validateRequest } from "@/lib/validation";
 import { ProductType } from "@/types/product";
 import prisma from "@/lib/prisma";
@@ -9,7 +12,7 @@ import prisma from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     // 验证用户身份
-    await requireAuth(request);
+    await requireAuth();
 
     // 解析请求体
     const requestData = await request.json();
@@ -138,7 +141,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // 验证用户身份
-    const user = await requireAuth(request);
+    const user = await requireAuth();
     console.log("user", user);
 
     // 解析查询参数
@@ -146,7 +149,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(url.searchParams.get("page") || "1");
     const pageSize = parseInt(url.searchParams.get("pageSize") || "10");
     const search = url.searchParams.get("search") || undefined;
-    const type = url.searchParams.get("type") as ProductType | undefined;
+    const typeParam = url.searchParams.get("type");
+    const type = typeParam ? (typeParam as ProductType) : undefined;
     const sortBy = url.searchParams.get("sortBy") || "createdAt";
     const sortOrder = url.searchParams.get("sortOrder") || "desc";
 
@@ -203,7 +207,7 @@ export async function GET(request: NextRequest) {
       category_id: null, // 暂不实现分类功能
       category_name: null,
       description: null,
-      image_url: product.image || null,
+      image: product.image || null,
       reference_purchase_price:
         product.referencePurchasePrice?.toNumber() || null,
       guide_unit_price: product.guidancePrice?.toNumber() || null,

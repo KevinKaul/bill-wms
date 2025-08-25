@@ -1,7 +1,7 @@
-import { Suspense } from 'react';
-import { Heading } from '@/components/ui/heading';
-import { Separator } from '@/components/ui/separator';
-import { InventoryAdjustmentForm } from '@/features/inventory/components/inventory-adjustment-form';
+import { Suspense } from "react";
+import { Heading } from "@/components/ui/heading";
+import { Separator } from "@/components/ui/separator";
+import { InventoryAdjustmentForm } from "@/features/inventory/components/inventory-adjustment-form";
 
 interface AdjustPageProps {
   searchParams: {
@@ -15,18 +15,9 @@ export default function AdjustPage({ searchParams }: AdjustPageProps) {
 
   return (
     <>
-      <div className='flex items-start justify-between'>
-        <Heading
-          title='库存调整'
-          description='调整产品库存数量，支持增加或减少库存操作'
-        />
-      </div>
       <Separator />
       <Suspense fallback={<div>加载中...</div>}>
-        <InventoryAdjustmentForm 
-          productId={productId}
-          batchId={batchId}
-        />
+        <InventoryAdjustmentForm productId={productId} batchId={batchId} />
       </Suspense>
     </>
   );

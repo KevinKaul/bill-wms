@@ -1,7 +1,7 @@
 // 产品类型枚举
 export enum ProductType {
-  RAW_MATERIAL = 'RAW_MATERIAL',
-  FINISHED_PRODUCT = 'FINISHED_PRODUCT'
+  RAW_MATERIAL = "RAW_MATERIAL",
+  FINISHED_PRODUCT = "FINISHED_PRODUCT",
 }
 
 // 基础产品类型
@@ -57,23 +57,11 @@ export interface ProductFilterOptions {
   limit?: number;
   search?: string;
   type?: ProductType;
-  sortBy?: 'name' | 'sku' | 'createdAt' | 'type';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "name" | "sku" | "createdAt" | "type";
+  sortOrder?: "asc" | "desc";
 }
 
-// 产品表单数据
-export interface ProductFormData {
-  sku: string;
-  name: string;
-  image?: string;
-  type: ProductType;
-  referencePurchasePrice?: number;
-  guidancePrice?: number;
-  bomItems?: {
-    componentId: string;
-    quantity: number;
-  }[];
-}
+// 产品表单数据类型现在从 @/lib/product-validation 导出
 
 // 产品统计数据
 export interface ProductStats {

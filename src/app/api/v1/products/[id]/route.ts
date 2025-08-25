@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
-import { idParamSchema, updateProductSchema } from '../validation';
-import { validateRequest } from '@/lib/validation';
-import prisma from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
+import { idParamSchema, updateProductSchema } from "@/lib/product-validation";
+import { validateRequest } from "@/lib/validation";
+import prisma from "@/lib/prisma";
 
 // 获取产品详情
 export async function GET(request: NextRequest) {
   // 从 URL 中提取 ID 参数
   const url = new URL(request.url);
-  const pathParts = url.pathname.split('/');
+  const pathParts = url.pathname.split("/");
   const id = pathParts[pathParts.length - 1];
-  
+
   // 创建一个参数对象供验证使用
   const params = { id };
   try {
@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
       include: {
         bomItems: {
           include: {
-            component: true
-          }
-        }
-      }
+            component: true,
+          },
+        },
+      },
     });
 
     if (!product) {
@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'NOT_FOUND',
-            message: '产品不存在'
-          }
+            code: "NOT_FOUND",
+            message: "产品不存在",
+          },
         },
         { status: 404 }
       );
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     // 计算成本（如果是组合产品）
     let calculatedCost = null;
-    if (product.type === 'FINISHED_PRODUCT' && product.bomItems.length > 0) {
+    if (product.type === "FINISHED_PRODUCT" && product.bomItems.length > 0) {
       calculatedCost = product.bomItems.reduce((total: number, item: any) => {
         const componentPrice = item.component.referencePurchasePrice || 0;
         return total + componentPrice.toNumber() * item.quantity.toNumber();
@@ -61,9 +61,11 @@ export async function GET(request: NextRequest) {
       material_sku: item.component.sku,
       material_name: item.component.name,
       quantity: item.quantity.toNumber(),
-      unit: '', // 暂不实现单位
+      unit: "", // 暂不实现单位
       cost_per_unit: item.component.referencePurchasePrice?.toNumber() || 0,
-      total_cost: (item.component.referencePurchasePrice?.toNumber() || 0) * item.quantity.toNumber()
+      total_cost:
+        (item.component.referencePurchasePrice?.toNumber() || 0) *
+        item.quantity.toNumber(),
     }));
 
     // 构建响应数据
@@ -77,66 +79,67 @@ export async function GET(request: NextRequest) {
         category_name: null,
         description: null,
         image_url: product.image || null,
-        reference_purchase_price: product.referencePurchasePrice?.toNumber() || null,
+        reference_purchase_price:
+          product.referencePurchasePrice?.toNumber() || null,
         guide_unit_price: product.guidancePrice?.toNumber() || null,
         calculated_cost: calculatedCost,
         bom_components_count: product.bomItems.length,
-        status: 'active',
+        status: "active",
         created_at: product.createdAt.toISOString(),
-        updated_at: product.updatedAt.toISOString()
+        updated_at: product.updatedAt.toISOString(),
       },
-      bom_components: product.type === 'FINISHED_PRODUCT' ? bomComponents : [],
+      bom_components: product.type === "FINISHED_PRODUCT" ? bomComponents : [],
       inventory_summary: {
         total_quantity: 0, // 暂不实现库存功能
         total_value: 0,
-        batch_count: 0
-      }
+        batch_count: 0,
+      },
     };
 
     // 返回响应
     return NextResponse.json({
       success: true,
-      data: responseData
+      data: responseData,
     });
   } catch (error) {
     // 记录错误
-    console.error('Get product detail error:', error);
-    const message = error instanceof Error ? error.message : '获取产品详情失败';
-    
-    if (message.startsWith('VALIDATION_ERROR:')) {
+    console.error("Get product detail error:", error);
+    const message = error instanceof Error ? error.message : "获取产品详情失败";
+
+    if (message.startsWith("VALIDATION_ERROR:")) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: { 
-            code: 'INVALID_REQUEST',
-            message: message.replace('VALIDATION_ERROR: ', '') 
-          } 
-        }, 
+        {
+          success: false,
+          error: {
+            code: "INVALID_REQUEST",
+            message: message.replace("VALIDATION_ERROR: ", ""),
+          },
+        },
         { status: 400 }
       );
     }
-    
-    if (message === 'UNAUTHORIZED') {
+
+    if (message === "UNAUTHORIZED") {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: { 
-            code: 'UNAUTHORIZED',
-            message: '未授权访问' 
-          } 
-        }, 
+        {
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "未授权访问",
+          },
+        },
         { status: 401 }
       );
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
-        error: { 
-          code: 'INTERNAL_ERROR',
-          message: '服务器内部错误' 
-        } 
-      }, 
+      {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "服务器内部错误",
+        },
+      },
       { status: 500 }
     );
   }
@@ -145,25 +148,30 @@ export async function GET(request: NextRequest) {
 // 更新产品
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证用户身份
     await requireAuth(request);
 
-    // 验证路径参数
-    const { id } = validateRequest(idParamSchema, params);
+    // 等待并解析路径参数
+    const { id } = await params;
 
+    // 验证路径参数
+    const validatedId = validateRequest(idParamSchema, { id }).id;
 
     // 解析请求体
     const requestData = await request.json();
-    
+
     // 验证请求数据
-    const validatedData = validateRequest(updateProductSchema, { id, ...requestData });
+    const validatedData = validateRequest(updateProductSchema, {
+      id: validatedId,
+      ...requestData,
+    });
 
     // 检查产品是否存在
     const existingProduct = await prisma.product.findUnique({
-      where: { sku: id }
+      where: { id: validatedId },
     });
 
     if (!existingProduct) {
@@ -171,9 +179,9 @@ export async function PUT(
         {
           success: false,
           error: {
-            code: 'NOT_FOUND',
-            message: '产品不存在'
-          }
+            code: "NOT_FOUND",
+            message: "产品不存在",
+          },
         },
         { status: 404 }
       );
@@ -182,7 +190,7 @@ export async function PUT(
     // 检查SKU是否重复（如果更新了SKU）
     if (validatedData.sku && validatedData.sku !== existingProduct.sku) {
       const duplicateSku = await prisma.product.findUnique({
-        where: { sku: validatedData.sku }
+        where: { sku: validatedData.sku },
       });
 
       if (duplicateSku) {
@@ -190,9 +198,9 @@ export async function PUT(
           {
             success: false,
             error: {
-              code: 'DUPLICATE_SKU',
-              message: 'SKU已存在'
-            }
+              code: "DUPLICATE_SKU",
+              message: "SKU已存在",
+            },
           },
           { status: 400 }
         );
@@ -203,13 +211,13 @@ export async function PUT(
     const updateData: any = {
       sku: validatedData.sku,
       name: validatedData.name,
-      image: validatedData.image
+      image: validatedData.image,
     };
 
     // 根据产品类型设置不同字段
-    if (existingProduct.type === 'RAW_MATERIAL') {
+    if (existingProduct.type === "RAW_MATERIAL") {
       updateData.referencePurchasePrice = validatedData.referencePurchasePrice;
-    } else if (existingProduct.type === 'FINISHED_PRODUCT') {
+    } else if (existingProduct.type === "FINISHED_PRODUCT") {
       updateData.guidancePrice = validatedData.guidancePrice;
     }
 
@@ -217,25 +225,28 @@ export async function PUT(
     const updatedProduct = await prisma.$transaction(async (tx: any) => {
       // 更新产品基本信息
       const product = await tx.product.update({
-        where: { id },
-        data: updateData
+        where: { id: validatedId },
+        data: updateData,
       });
 
       // 如果是组合产品且提供了BOM项，更新BOM
-      if (existingProduct.type === 'FINISHED_PRODUCT' && validatedData.bomItems) {
+      if (
+        existingProduct.type === "FINISHED_PRODUCT" &&
+        validatedData.bomItems
+      ) {
         // 删除现有BOM项
         await tx.bOMItem.deleteMany({
-          where: { productId: id }
+          where: { productId: validatedId },
         });
 
         // 创建新的BOM项
         if (validatedData.bomItems.length > 0) {
           await tx.bOMItem.createMany({
-            data: validatedData.bomItems.map(item => ({
-              productId: id,
+            data: validatedData.bomItems.map((item) => ({
+              productId: validatedId,
               componentId: item.componentId,
-              quantity: item.quantity
-            }))
+              quantity: item.quantity,
+            })),
           });
         }
       }
@@ -252,50 +263,51 @@ export async function PUT(
         name: updatedProduct.name,
         type: updatedProduct.type,
         image_url: updatedProduct.image || null,
-        reference_purchase_price: updatedProduct.referencePurchasePrice?.toNumber() || null,
+        reference_purchase_price:
+          updatedProduct.referencePurchasePrice?.toNumber() || null,
         guide_unit_price: updatedProduct.guidancePrice?.toNumber() || null,
-        updated_at: updatedProduct.updatedAt.toISOString()
-      }
+        updated_at: updatedProduct.updatedAt.toISOString(),
+      },
     });
   } catch (error) {
     // 记录错误
-    console.error('Update product error:', error);
-    const message = error instanceof Error ? error.message : '更新产品失败';
-    
-    if (message.startsWith('VALIDATION_ERROR:')) {
+    console.error("Update product error:", error);
+    const message = error instanceof Error ? error.message : "更新产品失败";
+
+    if (message.startsWith("VALIDATION_ERROR:")) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: { 
-            code: 'INVALID_REQUEST',
-            message: message.replace('VALIDATION_ERROR: ', '') 
-          } 
-        }, 
+        {
+          success: false,
+          error: {
+            code: "INVALID_REQUEST",
+            message: message.replace("VALIDATION_ERROR: ", ""),
+          },
+        },
         { status: 400 }
       );
     }
-    
-    if (message === 'UNAUTHORIZED') {
+
+    if (message === "UNAUTHORIZED") {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: { 
-            code: 'UNAUTHORIZED',
-            message: '未授权访问' 
-          } 
-        }, 
+        {
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "未授权访问",
+          },
+        },
         { status: 401 }
       );
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
-        error: { 
-          code: 'INTERNAL_ERROR',
-          message: '服务器内部错误' 
-        } 
-      }, 
+      {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "服务器内部错误",
+        },
+      },
       { status: 500 }
     );
   }
@@ -305,9 +317,9 @@ export async function PUT(
 export async function DELETE(request: NextRequest) {
   // 从 URL 中提取 ID 参数
   const url = new URL(request.url);
-  const pathParts = url.pathname.split('/');
+  const pathParts = url.pathname.split("/");
   const id = pathParts[pathParts.length - 1];
-  
+
   // 创建一个参数对象供验证使用
   const params = { id };
   try {
@@ -321,8 +333,8 @@ export async function DELETE(request: NextRequest) {
     const existingProduct = await prisma.product.findUnique({
       where: { id },
       include: {
-        bomComponents: true // 检查是否被其他产品引用
-      }
+        bomComponents: true, // 检查是否被其他产品引用
+      },
     });
 
     if (!existingProduct) {
@@ -330,9 +342,9 @@ export async function DELETE(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'NOT_FOUND',
-            message: '产品不存在'
-          }
+            code: "NOT_FOUND",
+            message: "产品不存在",
+          },
         },
         { status: 404 }
       );
@@ -344,9 +356,9 @@ export async function DELETE(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'PRODUCT_IN_USE',
-            message: '该产品已被其他产品引用，无法删除'
-          }
+            code: "PRODUCT_IN_USE",
+            message: "该产品已被其他产品引用，无法删除",
+          },
         },
         { status: 400 }
       );
@@ -354,53 +366,53 @@ export async function DELETE(request: NextRequest) {
 
     // 删除产品
     await prisma.product.delete({
-      where: { id }
+      where: { id },
     });
 
     // 返回响应
     return NextResponse.json({
       success: true,
-      data: null
+      data: null,
     });
   } catch (error) {
     // 记录错误
-    console.error('Delete product error:', error);
-    const message = error instanceof Error ? error.message : '删除产品失败';
-    
-    if (message.startsWith('VALIDATION_ERROR:')) {
+    console.error("Delete product error:", error);
+    const message = error instanceof Error ? error.message : "删除产品失败";
+
+    if (message.startsWith("VALIDATION_ERROR:")) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: { 
-            code: 'INVALID_REQUEST',
-            message: message.replace('VALIDATION_ERROR: ', '') 
-          } 
-        }, 
+        {
+          success: false,
+          error: {
+            code: "INVALID_REQUEST",
+            message: message.replace("VALIDATION_ERROR: ", ""),
+          },
+        },
         { status: 400 }
       );
     }
-    
-    if (message === 'UNAUTHORIZED') {
+
+    if (message === "UNAUTHORIZED") {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: { 
-            code: 'UNAUTHORIZED',
-            message: '未授权访问' 
-          } 
-        }, 
+        {
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "未授权访问",
+          },
+        },
         { status: 401 }
       );
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
-        error: { 
-          code: 'INTERNAL_ERROR',
-          message: '服务器内部错误' 
-        } 
-      }, 
+      {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "服务器内部错误",
+        },
+      },
       { status: 500 }
     );
   }

@@ -24,15 +24,15 @@ export const PURCHASE_ORDER_STATUS_OPTIONS = [
 // 付款状态选项
 export const PAYMENT_STATUS_OPTIONS = [
   { label: '全部', value: 'all' },
-  { label: '未付款', value: 'unpaid' },
-  { label: '已付款', value: 'paid' }
+  { label: '未付款', value: 'UNPAID' },
+  { label: '已付款', value: 'PAID' }
 ] as const;
 
 // 到货状态选项
 export const DELIVERY_STATUS_OPTIONS = [
   { label: '全部', value: 'all' },
-  { label: '未到货', value: 'pending' },
-  { label: '已到货', value: 'delivered' }
+  { label: '未到货', value: 'NOT_DELIVERED' },
+  { label: '已到货', value: 'DELIVERED' }
 ] as const;
 
 // 采购计划状态选项
@@ -60,12 +60,12 @@ export const STATUS_COLORS = {
   cancelled: 'bg-red-100 text-red-800',
   
   // 付款状态
-  unpaid: 'bg-yellow-100 text-yellow-800',
-  paid: 'bg-green-100 text-green-800',
+  UNPAID: 'bg-yellow-100 text-yellow-800',
+  PAID: 'bg-green-100 text-green-800',
   
   // 到货状态
-  pending: 'bg-orange-100 text-orange-800',
-  delivered: 'bg-green-100 text-green-800',
+  NOT_DELIVERED: 'bg-orange-100 text-orange-800',
+  DELIVERED: 'bg-green-100 text-green-800',
   
   // 采购计划状态
   approved: 'bg-blue-100 text-blue-800',
@@ -86,12 +86,12 @@ export const STATUS_LABELS = {
   cancelled: '已取消',
   
   // 付款状态
-  unpaid: '未付款',
-  paid: '已付款',
+  UNPAID: '未付款',
+  PAID: '已付款',
   
   // 到货状态
-  pending: '未到货',
-  delivered: '已到货',
+  NOT_DELIVERED: '待发货',
+  DELIVERED: '已到货',
   
   // 采购计划状态
   approved: '已批准',

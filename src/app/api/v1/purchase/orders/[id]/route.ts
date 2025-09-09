@@ -7,14 +7,15 @@ import prisma from "@/lib/prisma";
 // 获取采购单详情
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证用户身份
     await requireAuth(request);
 
-    // 验证路径参数
-    const { id } = validateRequest(idParamSchema, params);
+    // 获取并验证路径参数
+    const resolvedParams = await params;
+    const { id } = validateRequest(idParamSchema, resolvedParams);
 
     // 查询采购单详情
     const order = await prisma.purchaseOrder.findUnique({
@@ -140,14 +141,15 @@ export async function GET(
 // 更新采购单
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证用户身份
     await requireAuth(request);
 
-    // 验证路径参数
-    const { id } = validateRequest(idParamSchema, params);
+    // 获取并验证路径参数
+    const resolvedParams = await params;
+    const { id } = validateRequest(idParamSchema, resolvedParams);
 
     // 解析请求体
     const requestData = await request.json();
@@ -408,14 +410,15 @@ export async function PUT(
 // 删除采购单
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证用户身份
     await requireAuth(request);
 
-    // 验证路径参数
-    const { id } = validateRequest(idParamSchema, params);
+    // 获取并验证路径参数
+    const resolvedParams = await params;
+    const { id } = validateRequest(idParamSchema, resolvedParams);
 
     // 检查采购单是否存在且可删除
     const existingOrder = await prisma.purchaseOrder.findUnique({

@@ -6,6 +6,7 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import { Badge } from '@/components/ui/badge';
 import { STATUS_COLORS, STATUS_LABELS } from '@/constants/purchase';
 import { CellAction } from './cell-action';
+import { StatusUpdateCell } from './status-update-cell';
 
 export const columns: ColumnDef<PurchaseOrderTableItem>[] = [
   {
@@ -36,7 +37,7 @@ export const columns: ColumnDef<PurchaseOrderTableItem>[] = [
       const supplierCode = row.original.supplierCode;
       return (
         <div className='space-y-1'>
-          <div className='font-medium max-w-[200px] truncate'>{supplierName}</div>
+          <div className='font-medium max-w-[200px] justify-center items-center  truncate'>{supplierName}</div>
           <Badge variant='secondary' className='text-xs font-mono'>
             {supplierCode}
           </Badge>
@@ -69,11 +70,12 @@ export const columns: ColumnDef<PurchaseOrderTableItem>[] = [
       <DataTableColumnHeader column={column} title='付款状态' />
     ),
     cell: ({ row }) => {
-      const paymentStatus = row.getValue('paymentStatus') as keyof typeof STATUS_LABELS;
       return (
-        <Badge className={STATUS_COLORS[paymentStatus]}>
-          {STATUS_LABELS[paymentStatus]}
-        </Badge>
+        <StatusUpdateCell 
+          data={row.original} 
+          statusType="payment"
+          onUpdate={() => window.location.reload()}
+        />
       );
     },
     enableSorting: true,
@@ -87,11 +89,12 @@ export const columns: ColumnDef<PurchaseOrderTableItem>[] = [
       <DataTableColumnHeader column={column} title='到货状态' />
     ),
     cell: ({ row }) => {
-      const deliveryStatus = row.getValue('deliveryStatus') as keyof typeof STATUS_LABELS;
       return (
-        <Badge className={STATUS_COLORS[deliveryStatus]}>
-          {STATUS_LABELS[deliveryStatus]}
-        </Badge>
+        <StatusUpdateCell 
+          data={row.original} 
+          statusType="delivery"
+          onUpdate={() => window.location.reload()}
+        />
       );
     },
     enableSorting: true,

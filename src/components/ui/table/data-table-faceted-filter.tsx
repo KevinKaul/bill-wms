@@ -1,6 +1,7 @@
 'use client';
 
 import type { Option } from '@/types/data-table';
+import { STATUS_COLORS } from '@/constants/purchase';
 import type { Column } from '@tanstack/react-table';
 import { PlusCircle, XCircle } from 'lucide-react';
 
@@ -156,7 +157,14 @@ export function DataTableFacetedFilter<TData, TValue>({
                       <CheckIcon />
                     </div>
                     {option.icon && <option.icon />}
-                    <span className='truncate'>{option.label}</span>
+                    {/* 如果是状态选项，添加颜色标识 */}
+                    {STATUS_COLORS[option.value as keyof typeof STATUS_COLORS] ? (
+                      <Badge className={cn('mr-2', STATUS_COLORS[option.value as keyof typeof STATUS_COLORS])}>
+                        {option.label}
+                      </Badge>
+                    ) : (
+                      <span className='truncate'>{option.label}</span>
+                    )}
                     {option.count && (
                       <span className='ml-auto font-mono text-xs'>
                         {option.count}

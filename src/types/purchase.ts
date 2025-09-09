@@ -2,10 +2,10 @@
 export type PurchaseOrderStatus = 'draft' | 'confirmed' | 'completed' | 'cancelled';
 
 // 付款状态
-export type PaymentStatus = 'unpaid' | 'paid';
+export type PaymentStatus = 'UNPAID' | 'PAID';
 
 // 到货状态
-export type DeliveryStatus = 'pending' | 'delivered' | 'arrived';
+export type DeliveryStatus = 'NOT_DELIVERED' | 'DELIVERED';
 
 // 兼容字段别名
 export type ArrivalStatus = DeliveryStatus;

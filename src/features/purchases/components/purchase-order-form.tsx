@@ -13,12 +13,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,7 +33,8 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { ShoppingCart, Plus, Trash2, Calendar } from 'lucide-react';
+import { useAuth } from '@clerk/nextjs';
+import { ShoppingCart, Plus, Trash2, Calendar, Check, ChevronsUpDown } from 'lucide-react';
 import * as z from 'zod';
 
 const formSchema = z.object({
@@ -64,27 +70,30 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface PurchaseOrderFormProps {
-  initialData?: any; // 简化处理
+  orderId?: string;
 }
 
-export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
+export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
   const router = useRouter();
+  const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [openProductSelectors, setOpenProductSelectors] = useState<{[key: number]: boolean}>({});
+  const [openSupplierSelector, setOpenSupplierSelector] = useState(false);
 
-  const isEdit = !!initialData?.id;
+  const isEdit = !!orderId;
   const title = isEdit ? '编辑采购单' : '新增采购单';
   const description = isEdit ? '修改采购单信息' : '创建新的采购单';
   const toastMessage = isEdit ? '采购单更新成功' : '采购单创建成功';
   const action = isEdit ? '更新' : '创建';
 
   const defaultValues: FormValues = {
-    supplierId: initialData?.supplierId || '',
-    additionalCost: initialData?.additionalCost || 0,
-    expectedDeliveryDate: initialData?.expectedDeliveryDate ? new Date(initialData.expectedDeliveryDate) : undefined,
-    remark: initialData?.remark || '',
-    items: initialData?.items || [{ productId: '', quantity: 1, unitPrice: 0 }]
+    supplierId: '',
+    additionalCost: 0,
+    expectedDeliveryDate: undefined,
+    remark: '',
+    items: [{ productId: '', quantity: 1, unitPrice: 0 }]
   };
 
   const form = useForm<FormValues>({
@@ -101,9 +110,18 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
+        const token = await getToken();
         const [suppliersResponse, productsResponse] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/suppliers?per_page=100`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/products?per_page=100`)
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/suppliers?per_page=100`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/products?per_page=100`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          })
         ]);
 
         if (!suppliersResponse.ok || !productsResponse.ok) {
@@ -123,11 +141,54 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
       }
     };
     loadData();
-  }, []);
+  }, [getToken]);
+
+  // 加载采购单数据（编辑模式）
+  useEffect(() => {
+    if (!orderId) return;
+    
+    const loadOrderData = async () => {
+      try {
+        const token = await getToken();
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/orders/${orderId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('获取采购单数据失败');
+        }
+
+        const data = await response.json();
+        const orderData = data.data;
+
+        // 重置表单数据
+        form.reset({
+          supplierId: orderData.supplier_id || '',
+          additionalCost: orderData.additional_cost || 0,
+          expectedDeliveryDate: orderData.expected_delivery_date ? new Date(orderData.expected_delivery_date) : undefined,
+          remark: orderData.remark || '',
+          items: orderData.items?.map((item: any) => ({
+            productId: item.product_id,
+            quantity: item.quantity,
+            unitPrice: item.unit_price
+          })) || [{ productId: '', quantity: 1, unitPrice: 0 }]
+        });
+      } catch (error) {
+        console.error('Load order data error:', error);
+        toast.error('加载采购单数据失败');
+        router.push('/dashboard/purchase/order');
+      }
+    };
+
+    loadOrderData();
+  }, [orderId, getToken, form, router]);
 
   const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
+      const token = await getToken();
       
       const requestData = {
         supplier_id: values.supplierId,
@@ -142,11 +203,12 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
       };
 
       let response;
-      if (isEdit && initialData?.id) {
-        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/orders/${initialData.id}`, {
+      if (isEdit && orderId) {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/orders/${orderId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify(requestData)
         });
@@ -155,6 +217,7 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify(requestData)
         });
@@ -177,12 +240,37 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
   // 处理产品选择变化，自动填入参考采购单价
   const handleProductChange = (index: number, productId: string) => {
     const selectedProduct = products.find(p => p.id === productId);
-    // 只有原材料类型的产品才自动带入参考采购单价
-    if (selectedProduct && selectedProduct.type === 'raw_material' && selectedProduct.reference_purchase_price) {
-      form.setValue(`items.${index}.unitPrice`, selectedProduct.reference_purchase_price);
-    }
-    // 设置产品ID
+    
+    console.log('=== 产品选择调试信息 ===');
+    console.log('选择的产品ID:', productId);
+    console.log('找到的产品:', selectedProduct);
+    console.log('产品类型:', selectedProduct?.type);
+    console.log('参考采购价格:', selectedProduct?.reference_purchase_price);
+    console.log('所有产品列表:', products);
+    
+    // 先设置产品ID
     form.setValue(`items.${index}.productId`, productId);
+    
+    // 根据产品类型自动带入价格
+    let priceToSet = 0.01; // 默认价格
+    let priceSource = '默认价格';
+    
+    if (selectedProduct) {
+      if (selectedProduct.type === 'RAW_MATERIAL' && selectedProduct.reference_purchase_price) {
+        priceToSet = selectedProduct.reference_purchase_price;
+        priceSource = '参考采购价格';
+      } else if (selectedProduct.type === 'FINISHED_PRODUCT' && selectedProduct.guide_unit_price) {
+        priceToSet = selectedProduct.guide_unit_price;
+        priceSource = '指导价格';
+      }
+    }
+    
+    console.log('设置价格:', priceToSet, '来源:', priceSource);
+    form.setValue(`items.${index}.unitPrice`, priceToSet);
+    form.trigger(`items.${index}.unitPrice`);
+    
+    console.log('当前表单值:', form.getValues(`items.${index}`));
+    console.log('=== 调试信息结束 ===');
   };
 
   // 计算总金额
@@ -218,25 +306,66 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>供应商 *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder='选择供应商' />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {suppliers.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id}>
-                              <div className='flex items-center space-x-2'>
-                                <Badge variant='outline' className='text-xs'>
-                                  {supplier.code}
-                                </Badge>
-                                <span>{supplier.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover 
+                        open={openSupplierSelector} 
+                        onOpenChange={setOpenSupplierSelector}
+                      >
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className="w-full justify-between"
+                              disabled={loading}
+                            >
+                              {field.value
+                                ? (() => {
+                                    const selectedSupplier = suppliers.find(s => s.id === field.value);
+                                    return selectedSupplier ? (
+                                      <div className='flex items-center space-x-2'>
+                                        <Badge variant='outline' className='text-xs'>
+                                          {selectedSupplier.code}
+                                        </Badge>
+                                        <span>{selectedSupplier.full_name}</span>
+                                      </div>
+                                    ) : '选择供应商';
+                                  })()
+                                : "选择供应商"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command>
+                            <CommandInput placeholder="搜索供应商..." />
+                            <CommandEmpty>未找到供应商</CommandEmpty>
+                            <CommandGroup className="max-h-64 overflow-auto">
+                              {suppliers.map((supplier) => (
+                                <CommandItem
+                                  key={supplier.id}
+                                  value={`${supplier.code} ${supplier.full_name}`}
+                                  onSelect={() => {
+                                    field.onChange(supplier.id);
+                                    setOpenSupplierSelector(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={`mr-2 h-4 w-4 ${
+                                      field.value === supplier.id ? "opacity-100" : "opacity-0"
+                                    }`}
+                                  />
+                                  <div className='flex items-center space-x-2'>
+                                    <Badge variant='outline' className='text-xs'>
+                                      {supplier.code}
+                                    </Badge>
+                                    <span>{supplier.full_name}</span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -351,30 +480,78 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>采购SKU *</FormLabel>
-                          <Select onValueChange={(value) => handleProductChange(index, value)} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder='选择产品' />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {products.map((product) => (
-                                <SelectItem key={product.id} value={product.id}>
-                                  <div className='flex items-center space-x-2'>
-                                    <Badge variant='outline' className='text-xs'>
-                                      {product.sku}
-                                    </Badge>
-                                    <span>{product.name}</span>
-                                    {product.type === 'raw_material' && product.reference_purchase_price && (
-                                      <Badge variant='secondary' className='text-xs'>
-                                        ¥{product.reference_purchase_price}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Popover 
+                            open={openProductSelectors[index] || false} 
+                            onOpenChange={(open) => 
+                              setOpenProductSelectors(prev => ({ ...prev, [index]: open }))
+                            }
+                          >
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between"
+                                  disabled={loading}
+                                >
+                                  {field.value
+                                    ? (() => {
+                                        const selectedProduct = products.find(p => p.id === field.value);
+                                        return selectedProduct ? (
+                                          <div className='flex items-center space-x-2'>
+                                            <Badge variant='outline' className='text-xs'>
+                                              {selectedProduct.sku}
+                                            </Badge>
+                                            <span>{selectedProduct.name}</span>
+                                          </div>
+                                        ) : '选择产品';
+                                      })()
+                                    : "选择产品"}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0">
+                              <Command>
+                                <CommandInput placeholder="搜索产品..." />
+                                <CommandEmpty>未找到产品</CommandEmpty>
+                                <CommandGroup className="max-h-64 overflow-auto">
+                                  {products.map((product) => (
+                                    <CommandItem
+                                      key={product.id}
+                                      value={`${product.sku} ${product.name}`}
+                                      onSelect={() => {
+                                        handleProductChange(index, product.id);
+                                        setOpenProductSelectors(prev => ({ ...prev, [index]: false }));
+                                      }}
+                                    >
+                                      <Check
+                                        className={`mr-2 h-4 w-4 ${
+                                          field.value === product.id ? "opacity-100" : "opacity-0"
+                                        }`}
+                                      />
+                                      <div className='flex items-center space-x-2'>
+                                        <Badge variant='outline' className='text-xs'>
+                                          {product.sku}
+                                        </Badge>
+                                        <span>{product.name}</span>
+                                        {product.type === 'RAW_MATERIAL' && product.reference_purchase_price && (
+                                          <Badge variant='secondary' className='text-xs'>
+                                            ¥{product.reference_purchase_price}
+                                          </Badge>
+                                        )}
+                                        {product.type === 'FINISHED_PRODUCT' && product.guide_unit_price && (
+                                          <Badge variant='secondary' className='text-xs'>
+                                            ¥{product.guide_unit_price}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -417,9 +594,9 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                             />
                           </FormControl>
-                          <FormDescription>
+                          {/* <FormDescription>
                             系统自动带入参考采购单价，可手动修改
-                          </FormDescription>
+                          </FormDescription> */}
                           <FormMessage />
                         </FormItem>
                       )}

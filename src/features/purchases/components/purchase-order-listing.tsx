@@ -51,11 +51,13 @@ export default function PurchaseOrderListingPage({}: PurchaseOrderListingPagePro
           id: order.id,
           orderNumber: order.order_number,
           supplierName: order.supplier_name,
-          orderStatus: order.order_status,
+          supplierCode: order.supplier_code,
+          status: order.status,
           paymentStatus: order.payment_status,
           deliveryStatus: order.delivery_status,
           totalAmount: order.total_amount,
-          orderDate: order.created_at,
+          itemCount: order.items_count,
+          orderDate: order.order_date,
           expectedDeliveryDate: order.expected_delivery_date
         }));
 

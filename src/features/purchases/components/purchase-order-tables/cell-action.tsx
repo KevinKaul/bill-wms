@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, Eye, Edit, Copy, Trash, CheckCircle, DollarSign, Truck } from 'lucide-react';
+import { MoreHorizontal, Eye, Copy, Trash, CheckCircle, DollarSign, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -84,7 +84,6 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const canConfirm = data.status === 'draft';
   const canMarkPaid = data.status === 'confirmed' && data.paymentStatus === 'unpaid';
   const canMarkDelivered = data.status === 'confirmed' && data.deliveryStatus === 'pending';
-  const canEdit = data.status === 'draft';
   const canDelete = data.status === 'draft' || data.status === 'cancelled';
 
   return (
@@ -113,13 +112,6 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           >
             <Eye className='mr-2 h-4 w-4' /> 查看详情
           </DropdownMenuItem>
-          {canEdit && (
-            <DropdownMenuItem
-              onClick={() => router.push(`/dashboard/purchase/order/${data.id}/edit`)}
-            >
-              <Edit className='mr-2 h-4 w-4' /> 编辑
-            </DropdownMenuItem>
-          )}
           <DropdownMenuSeparator />
           {canConfirm && (
             <DropdownMenuItem onClick={onConfirmOrder} disabled={loading}>

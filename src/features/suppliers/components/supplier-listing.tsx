@@ -20,7 +20,6 @@ export default async function SupplierListingPage({}: SupplierListingPageProps) 
   };
 
   const response = await suppliersApi.getSuppliers(filters);
-  
   if (!response.success) {
     throw new Error(response.error?.message || '获取供应商列表失败');
   }
@@ -30,14 +29,11 @@ export default async function SupplierListingPage({}: SupplierListingPageProps) 
     id: supplier.id,
     code: supplier.code,
     name: supplier.name,
-    type: supplier.type,
-    contact_person: supplier.contact_person,
+    account: supplier.account || '',
+    contactPerson: supplier.contact_person,
     phone: supplier.phone,
     email: supplier.email,
-    address: supplier.address,
-    status: supplier.status,
-    created_at: supplier.created_at,
-    updated_at: supplier.updated_at
+    createdAt: supplier.created_at
   })) || [];
 
   return (

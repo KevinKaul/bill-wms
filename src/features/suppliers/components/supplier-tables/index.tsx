@@ -24,7 +24,7 @@ export function SupplierTable({ data, totalData }: SupplierTableProps) {
     shallow: false,
     debounceMs: 500
   });
-
+  
   return (
     <DataTable table={table}>
       <DataTableToolbar table={table} />

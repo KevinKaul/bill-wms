@@ -48,10 +48,10 @@ const formSchema = z.object({
     }),
   contactPerson: z.string().optional(),
   phone: z.string()
-    .optional()
-    .refine((val) => !val || SUPPLIER_VALIDATION.PHONE_PATTERN.test(val), {
-      message: '请输入有效的手机号码'
-    }),
+    .optional(),
+    // .refine((val) => !val || SUPPLIER_VALIDATION.PHONE_PATTERN.test(val), {
+    //   message: '请输入有效的手机号码'
+    // }),
   email: z.string()
     .optional()
     .refine((val) => !val || SUPPLIER_VALIDATION.EMAIL_PATTERN.test(val), {

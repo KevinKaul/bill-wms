@@ -3,8 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Supplier } from '@/types/supplier';
+// 移除未使用的导入
+import { SupplierDetail } from '@/types/supplier';
 // import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { 
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 interface SupplierViewPageProps {
-  supplier: Supplier;
+  supplier: SupplierDetail;
 }
 
 export function SupplierViewPage({ supplier }: SupplierViewPageProps) {
@@ -88,24 +88,16 @@ export function SupplierViewPage({ supplier }: SupplierViewPageProps) {
                   <Calendar className='h-4 w-4' />
                   <span>创建时间</span>
                 </div>
-                <div className='text-sm'>{supplier.createdAt.toLocaleString()}</div>
+                <div className='text-sm'>
+                  {supplier.created_at 
+                    ? new Date(supplier.created_at).toLocaleDateString('zh-CN')
+                    : '-'
+                  }
+                </div>
               </div>
             </div>
             
-            {supplier.remark && (
-              <>
-                <Separator />
-                <div className='space-y-2'>
-                  <div className='text-sm font-medium text-muted-foreground flex items-center space-x-1'>
-                    <FileText className='h-4 w-4' />
-                    <span>备注</span>
-                  </div>
-                  <div className='text-sm text-muted-foreground bg-muted/50 p-3 rounded-md'>
-                    {supplier.remark}
-                  </div>
-                </div>
-              </>
-            )}
+            {/* 备注字段暂不可用 */}
           </CardContent>
         </Card>
 
@@ -118,13 +110,13 @@ export function SupplierViewPage({ supplier }: SupplierViewPageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className='space-y-4'>
-            {supplier.contactPerson && (
+            {supplier.contact_person && (
               <div className='space-y-2'>
                 <div className='text-sm font-medium text-muted-foreground flex items-center space-x-1'>
                   <User className='h-4 w-4' />
                   <span>联系人</span>
                 </div>
-                <div className='font-medium'>{supplier.contactPerson}</div>
+                <div className='font-medium'>{supplier.contact_person}</div>
               </div>
             )}
             
@@ -160,7 +152,7 @@ export function SupplierViewPage({ supplier }: SupplierViewPageProps) {
               </div>
             )}
             
-            {!supplier.contactPerson && !supplier.phone && !supplier.email && !supplier.address && (
+            {!supplier.contact_person && !supplier.phone && !supplier.email && !supplier.address && (
               <div className='text-center text-muted-foreground py-4'>
                 <User className='h-8 w-8 mx-auto mb-2 opacity-50' />
                 <p className='text-sm'>暂无联系信息</p>

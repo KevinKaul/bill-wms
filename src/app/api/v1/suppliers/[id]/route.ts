@@ -7,8 +7,14 @@ import prisma from "@/lib/prisma";
 // 获取供应商详情
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
 ) {
+   // 从 URL 中提取 ID 参数
+   const url = new URL(request.url);
+   const pathParts = url.pathname.split("/");
+   const id = pathParts[pathParts.length - 1];
+ 
+   // 创建一个参数对象供验证使用
+   const params = { id };
   try {
     // 验证用户身份
     await requireAuth(request);
@@ -195,8 +201,7 @@ export async function PUT(
 
     // 只更新提供的字段
     if (validatedData.code !== undefined) updateData.code = validatedData.code;
-    if (validatedData.fullName !== undefined)
-      updateData.fullName = validatedData.fullName;
+    if (validatedData.name !== undefined) updateData.name = validatedData.name;
     if (validatedData.account !== undefined)
       updateData.account = validatedData.account;
     if (validatedData.type !== undefined) updateData.type = validatedData.type;

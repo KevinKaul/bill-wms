@@ -108,9 +108,10 @@ export const columns: ColumnDef<SupplierTableItem>[] = [
     ),
     cell: ({ row }) => {
       const createdAt = row.getValue('createdAt') as string;
+      console.log(createdAt);
       return (
         <div className='text-sm text-muted-foreground'>
-          {createdAt.toLocaleString()}
+          {createdAt ? new Date(createdAt).toLocaleDateString('zh-CN') : '-'}
         </div>
       );
     },

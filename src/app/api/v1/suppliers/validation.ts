@@ -7,7 +7,7 @@ export const createSupplierSchema = z.object({
     .min(1, "供应商代号不能为空")
     .max(20, "供应商代号长度不能超过20字符")
     .regex(/^[A-Za-z0-9_-]+$/, "供应商代号只能包含字母、数字、下划线和短横线"),
-  fullName: z
+  name: z
     .string()
     .min(1, "供应商全称不能为空")
     .max(200, "供应商全称长度不能超过200字符"),
@@ -37,7 +37,7 @@ export const updateSupplierSchema = z.object({
     .max(20, "供应商代号长度不能超过20字符")
     .regex(/^[A-Za-z0-9_-]+$/, "供应商代号只能包含字母、数字、下划线和短横线")
     .optional(),
-  fullName: z
+  name: z
     .string()
     .min(1, "供应商全称不能为空")
     .max(200, "供应商全称长度不能超过200字符")

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const supplier = await prisma.supplier.create({
       data: {
         code: validatedData.code,
-        fullName: validatedData.fullName,
+        fullName: validatedData.name,
         account: validatedData.account,
         type: validatedData.type,
         contact_person: validatedData.contact_person,

@@ -196,9 +196,9 @@ export function PurchasePlanForm({ initialData }: PurchasePlanFormProps) {
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
+                      {/* <FormDescription>
                         简洁明了的计划标题，便于识别和管理
-                      </FormDescription>
+                      </FormDescription> */}
                       <FormMessage />
                     </FormItem>
                   )}

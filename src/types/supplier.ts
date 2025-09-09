@@ -44,6 +44,29 @@ export interface SupplierFilters {
   search?: string; // 搜索供应商代号或名称
 }
 
+// 供应商详情（API返回格式）
+export interface SupplierDetail {
+  id: string;
+  code: string;
+  name: string;
+  account: string;
+  type?: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  remark?: string;
+  status?: string;
+  created_at: string;
+  updated_at: string;
+  statistics?: {
+    total_purchase_orders: number;
+    total_purchase_amount: number;
+    total_process_orders: number;
+    total_processing_amount: number;
+  };
+}
+
 // 供应商API响应
 export interface SupplierResponse {
   suppliers: Supplier[];

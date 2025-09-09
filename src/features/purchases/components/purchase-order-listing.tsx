@@ -1,45 +1,83 @@
+'use client';
+
 import { PurchaseOrderTableItem } from '@/types/purchase';
-import { fakePurchaseOrdersApi } from '@/lib/mock-purchases';
-import { searchParamsCache } from '@/lib/searchparams';
 import { PurchaseOrderTable } from './purchase-order-tables';
+import { useAuth } from '@clerk/nextjs';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 type PurchaseOrderListingPageProps = {};
 
-export default async function PurchaseOrderListingPage({}: PurchaseOrderListingPageProps) {
-  // 从搜索参数缓存获取过滤条件
-  const page = searchParamsCache.get('page');
-  const search = searchParamsCache.get('name');
-  const pageLimit = searchParamsCache.get('perPage');
-  const status = searchParamsCache.get('status');
-  const paymentStatus = searchParamsCache.get('paymentStatus');
-  const deliveryStatus = searchParamsCache.get('deliveryStatus');
+export default function PurchaseOrderListingPage({}: PurchaseOrderListingPageProps) {
+  const { getToken } = useAuth();
+  const searchParams = useSearchParams();
+  const [data, setData] = useState<PurchaseOrderTableItem[]>([]);
+  const [totalData, setTotalData] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const filters = {
-    page,
-    limit: pageLimit,
-    ...(search && typeof search === 'string' && { search }),
-    ...(status && typeof status === 'string' && { status }),
-    ...(paymentStatus && typeof paymentStatus === 'string' && { paymentStatus }),
-    ...(deliveryStatus && typeof deliveryStatus === 'string' && { deliveryStatus })
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const page = parseInt(searchParams.get('page') || '1');
+        const search = searchParams.get('name') || undefined;
+        const pageLimit = parseInt(searchParams.get('perPage') || '10');
+        const status = searchParams.get('status') || undefined;
 
-  const data = await fakePurchaseOrdersApi.getPurchaseOrders(filters);
-  const totalOrders = data.total_orders;
-  const orders: PurchaseOrderTableItem[] = data.orders.map(order => ({
-    id: order.id,
-    orderNumber: order.orderNumber,
-    supplierCode: order.supplierCode,
-    supplierName: order.supplierName,
-    status: order.status,
-    paymentStatus: order.paymentStatus,
-    deliveryStatus: order.deliveryStatus,
-    totalAmount: order.totalAmount,
-    itemCount: order.items.length,
-    orderDate: order.orderDate.toISOString(),
-    expectedDeliveryDate: order.expectedDeliveryDate?.toISOString()
-  }));
+        const filters = {
+          page,
+          per_page: pageLimit,
+          ...(search && { search }),
+          ...(status && { status })
+        };
+
+        const token = await getToken();
+        const response = await fetch(`/api/v1/purchase/orders?${new URLSearchParams(
+          Object.entries(filters).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
+        ).toString()}`, {
+          headers: {
+            ...(token && { Authorization: `Bearer ${token}` })
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('获取采购单列表失败');
+        }
+
+        const result = await response.json();
+        const responseData = result.data;
+        const totalOrders = responseData.total;
+        const orders: PurchaseOrderTableItem[] = responseData.orders.map((order: any) => ({
+          id: order.id,
+          orderNumber: order.order_number,
+          supplierName: order.supplier_name,
+          orderStatus: order.order_status,
+          paymentStatus: order.payment_status,
+          deliveryStatus: order.delivery_status,
+          totalAmount: order.total_amount,
+          orderDate: order.created_at,
+          expectedDeliveryDate: order.expected_delivery_date
+        }));
+
+        setData(orders);
+        setTotalData(totalOrders);
+      } catch (error) {
+        console.error('获取采购单列表失败:', error);
+        setData([]);
+        setTotalData(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [searchParams, getToken]);
+
+  if (loading) {
+    return <div>加载中...</div>;
+  }
 
   return (
-    <PurchaseOrderTable data={orders} totalData={totalOrders} />
+    <PurchaseOrderTable data={data} totalData={totalData} />
   );
 }

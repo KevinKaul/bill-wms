@@ -22,11 +22,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PurchaseOrderFormData } from '@/types/purchase';
 import { PURCHASE_VALIDATION } from '@/constants/purchase';
-import { fakePurchaseOrdersApi } from '@/lib/mock-purchases';
-import { fakeSuppliersApi } from '@/lib/mock-suppliers';
-import { fakeProductsApi } from '@/lib/mock-products';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
@@ -105,14 +101,25 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [suppliersData, productsData] = await Promise.all([
-          fakeSuppliersApi.getSuppliers({ limit: 100 }),
-          fakeProductsApi.getProducts({ limit: 100 })
+        const [suppliersResponse, productsResponse] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/suppliers?per_page=100`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/products?per_page=100`)
         ]);
-        setSuppliers(suppliersData.suppliers);
-        setProducts(productsData.products);
+
+        if (!suppliersResponse.ok || !productsResponse.ok) {
+          throw new Error('获取数据失败');
+        }
+
+        const [suppliersData, productsData] = await Promise.all([
+          suppliersResponse.json(),
+          productsResponse.json()
+        ]);
+
+        setSuppliers(suppliersData.data?.suppliers || []);
+        setProducts(productsData.data?.products || []);
       } catch (error) {
         toast.error('加载数据失败');
+        console.error('Load data error:', error);
       }
     };
     loadData();
@@ -122,19 +129,60 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
     try {
       setLoading(true);
       
+      const requestData = {
+        supplier_id: values.supplierId,
+        additional_cost: values.additionalCost,
+        expected_delivery_date: values.expectedDeliveryDate?.toISOString(),
+        remark: values.remark,
+        items: values.items.map(item => ({
+          product_id: item.productId,
+          quantity: item.quantity,
+          unit_price: item.unitPrice
+        }))
+      };
+
+      let response;
       if (isEdit && initialData?.id) {
-        await fakePurchaseOrdersApi.updatePurchaseOrder(initialData.id, values);
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/orders/${initialData.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData)
+        });
       } else {
-        await fakePurchaseOrdersApi.createPurchaseOrder(values);
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/orders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData)
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error('操作失败');
       }
       
       toast.success(toastMessage);
       router.push('/dashboard/purchase/order');
     } catch (error) {
+      console.error('Submit error:', error);
       toast.error(isEdit ? '更新失败，请重试' : '创建失败，请重试');
     } finally {
       setLoading(false);
     }
+  };
+
+  // 处理产品选择变化，自动填入参考采购单价
+  const handleProductChange = (index: number, productId: string) => {
+    const selectedProduct = products.find(p => p.id === productId);
+    // 只有原材料类型的产品才自动带入参考采购单价
+    if (selectedProduct && selectedProduct.type === 'raw_material' && selectedProduct.reference_purchase_price) {
+      form.setValue(`items.${index}.unitPrice`, selectedProduct.reference_purchase_price);
+    }
+    // 设置产品ID
+    form.setValue(`items.${index}.productId`, productId);
   };
 
   // 计算总金额
@@ -302,8 +350,8 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
                       name={`items.${index}.productId`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>产品 *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormLabel>采购SKU *</FormLabel>
+                          <Select onValueChange={(value) => handleProductChange(index, value)} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder='选择产品' />
@@ -317,6 +365,11 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
                                       {product.sku}
                                     </Badge>
                                     <span>{product.name}</span>
+                                    {product.type === 'raw_material' && product.reference_purchase_price && (
+                                      <Badge variant='secondary' className='text-xs'>
+                                        ¥{product.reference_purchase_price}
+                                      </Badge>
+                                    )}
                                   </div>
                                 </SelectItem>
                               ))}
@@ -352,17 +405,21 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
                       name={`items.${index}.unitPrice`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>单价 *</FormLabel>
+                          <FormLabel>采购单价 *</FormLabel>
                           <FormControl>
                             <Input
                               type='number'
                               step='0.01'
                               min='0.01'
+                              placeholder='自动带入参考采购单价'
                               disabled={loading}
                               {...field}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                             />
                           </FormControl>
+                          <FormDescription>
+                            系统自动带入参考采购单价，可手动修改
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

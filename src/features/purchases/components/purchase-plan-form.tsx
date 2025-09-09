@@ -22,10 +22,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PurchasePlanFormData } from "@/types/purchase";
-import { PURCHASE_VALIDATION, PRIORITY_OPTIONS } from "@/constants/purchase";
-import { fakePurchasePlansApi } from "@/lib/mock-purchases";
-import { fakeProductsApi } from "@/lib/mock-products";
+import { PURCHASE_VALIDATION } from "@/constants/purchase";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useRouter } from "next/navigation";
@@ -66,7 +63,6 @@ const formSchema = z.object({
           .max(PURCHASE_VALIDATION.UNIT_PRICE_MAX, {
             message: `预估单价不能超过${PURCHASE_VALIDATION.UNIT_PRICE_MAX}`,
           }),
-        priority: z.enum(["low", "medium", "high"]),
         remark: z.string().optional(),
       })
     )
@@ -76,35 +72,43 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface PurchasePlanFormProps {
+  planId?: string; // 采购计划ID，用于编辑模式
   initialData?: any; // 简化处理
 }
 
-export function PurchasePlanForm({ initialData }: PurchasePlanFormProps) {
+export function PurchasePlanForm({ planId, initialData }: PurchasePlanFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
+  const [planData, setPlanData] = useState<any>(null);
 
-  const isEdit = !!initialData?.id;
+  const isEdit = !!planId;
   const title = isEdit ? "编辑采购计划" : "新增采购计划";
   const description = isEdit ? "修改采购计划信息" : "创建新的采购计划";
   const toastMessage = isEdit ? "采购计划更新成功" : "采购计划创建成功";
   const action = isEdit ? "更新" : "创建";
 
+  const currentData = planData || initialData;
+  
   const defaultValues: FormValues = {
-    title: initialData?.title || "",
-    description: initialData?.description || "",
-    planDate: initialData?.planDate
-      ? new Date(initialData.planDate)
+    title: currentData?.title || "",
+    description: currentData?.remark || "",
+    planDate: currentData?.created_at
+      ? new Date(currentData.created_at)
       : new Date(),
-    expectedExecutionDate: initialData?.expectedExecutionDate
-      ? new Date(initialData.expectedExecutionDate)
+    expectedExecutionDate: currentData?.executed_at
+      ? new Date(currentData.executed_at)
       : undefined,
-    items: initialData?.items || [
+    items: currentData?.items?.map((item: any) => ({
+      productId: item.product_id,
+      plannedQuantity: item.quantity,
+      estimatedUnitPrice: item.estimated_unit_price,
+      remark: item.remark || "",
+    })) || [
       {
         productId: "",
         plannedQuantity: 1,
         estimatedUnitPrice: 0,
-        priority: "medium" as const,
         remark: "",
       },
     ],
@@ -120,35 +124,111 @@ export function PurchasePlanForm({ initialData }: PurchasePlanFormProps) {
     name: "items",
   });
 
-  // 加载产品数据
+  // 加载采购计划数据（编辑模式）
   useEffect(() => {
-    const loadData = async () => {
+    const fetchPlanData = async () => {
+      if (!planId) return;
+      
       try {
-        const productsData = await fakeProductsApi.getProducts({ limit: 100 });
-        setProducts(productsData.products);
+        setLoading(true);
+        const response = await fetch(`/api/v1/purchase/plans/${planId}`);
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setPlanData(result.data);
+            // 重置表单数据
+            const data = result.data;
+            form.reset({
+              title: data.title || "",
+              description: data.remark || "",
+              planDate: data.created_at ? new Date(data.created_at) : new Date(),
+              expectedExecutionDate: data.executed_at ? new Date(data.executed_at) : undefined,
+              items: data.items?.map((item: any) => ({
+                productId: item.product_id,
+                plannedQuantity: item.quantity,
+                estimatedUnitPrice: item.estimated_unit_price,
+                remark: item.remark || "",
+              })) || [{
+                productId: "",
+                plannedQuantity: 1,
+                estimatedUnitPrice: 0,
+                remark: "",
+              }],
+            });
+          }
+        }
       } catch (error) {
-        toast.error("加载数据失败");
+        console.error('获取采购计划详情失败:', error);
+        toast.error('获取采购计划详情失败');
+      } finally {
+        setLoading(false);
       }
     };
-    loadData();
+
+    fetchPlanData();
+  }, [planId, form]);
+
+  // 加载产品数据
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/v1/products');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setProducts(result.data.products || []);
+          }
+        }
+      } catch (error) {
+        console.error('获取产品列表失败:', error);
+      }
+    };
+
+    fetchProducts();
   }, []);
 
   const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
 
-      if (isEdit && initialData?.id) {
-        // 如果有更新API，这里调用
-        // await fakePurchasePlansApi.updatePurchasePlan(initialData.id, values);
-        toast.error("更新功能尚未实现");
-        return;
+      const requestData = {
+        title: values.title,
+        remark: values.description,
+        items: values.items.map(item => ({
+          productId: item.productId,
+          quantity: item.plannedQuantity,
+          estimatedUnitPrice: item.estimatedUnitPrice,
+          remark: item.remark
+        }))
+      };
+
+      let response;
+      if (isEdit && planId) {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/plans/${planId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData)
+        });
       } else {
-        await fakePurchasePlansApi.createPurchasePlan(values);
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/plans`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData)
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error('操作失败');
       }
 
       toast.success(toastMessage);
       router.push("/dashboard/purchase/plan");
     } catch (error) {
+      console.error('Submit error:', error);
       toast.error(isEdit ? "更新失败，请重试" : "创建失败，请重试");
     } finally {
       setLoading(false);
@@ -308,7 +388,6 @@ export function PurchasePlanForm({ initialData }: PurchasePlanFormProps) {
                       productId: "",
                       plannedQuantity: 1,
                       estimatedUnitPrice: 0,
-                      priority: "medium" as const,
                       remark: "",
                     })
                   }
@@ -419,36 +498,6 @@ export function PurchasePlanForm({ initialData }: PurchasePlanFormProps) {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.priority`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>优先级 *</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {PRIORITY_OPTIONS.map((option) => (
-                                <SelectItem
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </div>
 
                   <FormField

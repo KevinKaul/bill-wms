@@ -322,6 +322,77 @@ export const storageApi = {
 };
 
 /**
+ * 采购API服务
+ */
+export const purchaseApi = {
+  /**
+   * 获取采购单列表
+   */
+  getPurchaseOrders: async (params: {
+    page?: number;
+    per_page?: number;
+    search?: string;
+    status?: string;
+    payment_status?: string;
+    delivery_status?: string;
+    sort?: string;
+    order?: "asc" | "desc";
+  }) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.per_page) queryParams.append("per_page", params.per_page.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.status) queryParams.append("status", params.status);
+    if (params.payment_status) queryParams.append("payment_status", params.payment_status);
+    if (params.delivery_status) queryParams.append("delivery_status", params.delivery_status);
+    if (params.sort) queryParams.append("sort", params.sort);
+    if (params.order) queryParams.append("order", params.order);
+
+    const url = `/api/v1/purchase/orders?${queryParams.toString()}`;
+    return apiRequest(url, "GET");
+  },
+
+  /**
+   * 获取采购计划列表
+   */
+  getPurchasePlans: async (params: {
+    page?: number;
+    per_page?: number;
+    search?: string;
+    status?: string;
+    sort?: string;
+    order?: "asc" | "desc";
+  }) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.per_page) queryParams.append("per_page", params.per_page.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.status) queryParams.append("status", params.status);
+    if (params.sort) queryParams.append("sort", params.sort);
+    if (params.order) queryParams.append("order", params.order);
+
+    const url = `/api/v1/purchase/plans?${queryParams.toString()}`;
+    return apiRequest(url, "GET");
+  },
+
+  /**
+   * 创建采购单
+   */
+  createPurchaseOrder: async (orderData: any) => {
+    return apiRequest("/api/v1/purchase/orders", "POST", orderData);
+  },
+
+  /**
+   * 创建采购计划
+   */
+  createPurchasePlan: async (planData: any) => {
+    return apiRequest("/api/v1/purchase/plans", "POST", planData);
+  },
+};
+
+/**
  * 创建客户端API实例（用于客户端组件）
  * 使用方法：
  * ```

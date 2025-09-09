@@ -7,15 +7,22 @@ import prisma from "@/lib/prisma";
 // 获取采购计划详情
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
 ) {
+  console.log(request.url);
+   // 从 URL 中提取 ID 参数
+   const url = new URL(request.url);
+   const pathParts = url.pathname.split("/");
+   const id = pathParts[pathParts.length - 1];
+ 
+   // 创建一个参数对象供验证使用
+   const params = { id };
   try {
     // 验证用户身份
     await requireAuth(request);
 
     // 验证路径参数
     const { id } = validateRequest(idParamSchema, params);
-
+    console.log(id);
     // 查询采购计划详情
     const plan = await prisma.purchasePlan.findUnique({
       where: { id },
@@ -120,8 +127,14 @@ export async function GET(
 // 更新采购计划
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
 ) {
+   // 从 URL 中提取 ID 参数
+   const url = new URL(request.url);
+   const pathParts = url.pathname.split("/");
+   const id = pathParts[pathParts.length - 1];
+ 
+   // 创建一个参数对象供验证使用
+   const params = { id };
   try {
     // 验证用户身份
     await requireAuth(request);
@@ -337,8 +350,14 @@ export async function PUT(
 // 删除采购计划
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
 ) {
+   // 从 URL 中提取 ID 参数
+   const url = new URL(request.url);
+   const pathParts = url.pathname.split("/");
+   const id = pathParts[pathParts.length - 1];
+ 
+   // 创建一个参数对象供验证使用
+   const params = { id };
   try {
     // 验证用户身份
     await requireAuth(request);

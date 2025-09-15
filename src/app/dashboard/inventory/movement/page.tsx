@@ -7,7 +7,7 @@ import { MovementListingPage } from '@/features/inventory/components/movement-li
 import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
 
 interface MovementPageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     per_page?: string;
     sort?: string;
@@ -18,10 +18,10 @@ interface MovementPageProps {
     sourceType?: string;
     batchId?: string;
     productId?: string;
-  };
+  }>;
 }
 
-export default function MovementPage({ searchParams }: MovementPageProps) {
+export default async function MovementPage({ searchParams }: MovementPageProps) {
   return (
     <>
       <div className='flex items-start justify-between'>
@@ -48,7 +48,7 @@ export default function MovementPage({ searchParams }: MovementPageProps) {
           />
         }
       >
-        <MovementListingPage searchParams={searchParams} />
+        <MovementListingPage searchParams={await searchParams} />
       </Suspense>
     </>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { ProductTableItem, ProductType } from "@/types/product";
-import { createClientApi } from "@/lib/api-client";
+import { createClientApi } from "@/lib/client-api";
 import { ProductTable } from "./product-tables";
 import { columns } from "./product-tables/columns";
 import { useAuth } from "@clerk/nextjs";

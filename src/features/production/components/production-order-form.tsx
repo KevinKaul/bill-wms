@@ -26,7 +26,6 @@ import {
 } from '@/components/ui/table';
 import { PRODUCTION_VALIDATION, COMMON_PROCESSING_FEES } from '@/constants/production';
 import { ProductionOrderFormData, MaterialRequirement } from '@/types/production';
-import { fakeProductionApi } from '@/lib/mock-production';
 import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
 const productionOrderSchema = z.object({
@@ -45,28 +44,19 @@ const productionOrderSchema = z.object({
 
 interface ProductionOrderFormProps {
   initialData?: Partial<ProductionOrderFormData>;
+  orderId?: string;
 }
 
-// 模拟产品数据（只包含成品）
-const mockFinishedProducts = [
-  { id: '3', sku: 'FIN001', name: '成品A' },
-  { id: '4', sku: 'FIN002', name: '成品B' }
-];
-
-// 模拟供应商数据
-const mockSuppliers = [
-  { id: 'SUP001', name: '加工厂A' },
-  { id: 'SUP002', name: '加工厂B' },
-  { id: 'SUP003', name: '加工厂C' }
-];
-
-export function ProductionOrderForm({ initialData }: ProductionOrderFormProps) {
+export function ProductionOrderForm({ initialData, orderId }: ProductionOrderFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [materialRequirements, setMaterialRequirements] = useState<MaterialRequirement[]>([]);
   const [canProduce, setCanProduce] = useState(false);
   const [maxProducibleQuantity, setMaxProducibleQuantity] = useState(0);
   const [checkingMaterials, setCheckingMaterials] = useState(false);
+  const [finishedProducts, setFinishedProducts] = useState<Array<{id: string; sku: string; name: string}>>([]);
+  const [suppliers, setSuppliers] = useState<Array<{id: string; name: string}>>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   const form = useForm<ProductionOrderFormData>({
     resolver: zodResolver(productionOrderSchema),
@@ -82,6 +72,58 @@ export function ProductionOrderForm({ initialData }: ProductionOrderFormProps) {
   const watchedProductId = form.watch('productId');
   const watchedQuantity = form.watch('plannedQuantity');
 
+  // 加载产品和供应商数据
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        setLoadingData(true);
+        
+        // 加载成品列表
+        const productsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/products?type=FINISHED_PRODUCT`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (productsResponse.ok) {
+          const productsResult = await productsResponse.json();
+          if (productsResult.success) {
+            setFinishedProducts(productsResult.data.products.map((p: any) => ({
+              id: p.id,
+              sku: p.sku,
+              name: p.name,
+            })));
+          }
+        }
+
+        // 加载供应商列表
+        const suppliersResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/suppliers?type=processing`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (suppliersResponse.ok) {
+          const suppliersResult = await suppliersResponse.json();
+          if (suppliersResult.success) {
+            setSuppliers(suppliersResult.data.suppliers.map((s: any) => ({
+              id: s.id,
+              name: s.fullName || s.full_name,
+            })));
+          }
+        }
+      } catch (error) {
+        console.error('加载数据失败:', error);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
   // 当产品或数量变化时，重新计算物料需求
   useEffect(() => {
     const checkMaterialRequirements = async () => {
@@ -94,14 +136,35 @@ export function ProductionOrderForm({ initialData }: ProductionOrderFormProps) {
 
       setCheckingMaterials(true);
       try {
-        const response = await fakeProductionApi.getMaterialRequirements(
-          watchedProductId, 
-          watchedQuantity
+        // 模拟物料需求检查 - 实际应该调用API检查BOM和库存
+        // 这里暂时使用模拟数据，实际项目中需要实现相应的API
+        const mockRequirements: MaterialRequirement[] = [
+          {
+            materialId: 'raw1',
+            materialSku: 'RAW001',
+            materialName: '原材料A',
+            requiredQuantity: watchedQuantity * 10,
+            availableQuantity: 150,
+            shortfall: Math.max(0, watchedQuantity * 10 - 150),
+          },
+          {
+            materialId: 'raw2',
+            materialSku: 'RAW002',
+            materialName: '原材料B',
+            requiredQuantity: watchedQuantity * 5,
+            availableQuantity: 80,
+            shortfall: Math.max(0, watchedQuantity * 5 - 80),
+          },
+        ];
+        
+        const canProduceAll = mockRequirements.every(req => req.shortfall === 0);
+        const maxQuantity = Math.min(
+          ...mockRequirements.map(req => Math.floor(req.availableQuantity / (req.requiredQuantity / watchedQuantity)))
         );
         
-        setMaterialRequirements(response.requirements);
-        setCanProduce(response.canProduce);
-        setMaxProducibleQuantity(response.maxProducibleQuantity);
+        setMaterialRequirements(mockRequirements);
+        setCanProduce(canProduceAll);
+        setMaxProducibleQuantity(maxQuantity);
       } catch (error) {
         console.error('检查物料需求失败:', error);
         setMaterialRequirements([]);
@@ -124,17 +187,41 @@ export function ProductionOrderForm({ initialData }: ProductionOrderFormProps) {
 
     setLoading(true);
     try {
-      await fakeProductionApi.createProductionOrder(data);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          product_id: data.productId,
+          planned_quantity: data.plannedQuantity,
+          supplier_id: data.supplierId || undefined,
+          processing_fee: data.processingFee,
+          remark: data.remark,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || '创建加工单失败');
+      }
+
       toast.success('加工单创建成功');
       router.push('/dashboard/production/order');
     } catch (error) {
-      toast.error('创建加工单失败');
+      console.error('创建加工单失败:', error);
+      toast.error(error instanceof Error ? error.message : '创建加工单失败');
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedProduct = mockFinishedProducts.find(p => p.id === watchedProductId);
+  const selectedProduct = finishedProducts.find(p => p.id === watchedProductId);
 
   // 计算物料总成本
   const totalMaterialCost = materialRequirements.reduce((total, req) => {
@@ -142,6 +229,14 @@ export function ProductionOrderForm({ initialData }: ProductionOrderFormProps) {
     const unitCost = req.materialSku === 'RAW001' ? 15.75 : 26.5;
     return total + (req.requiredQuantity * unitCost);
   }, 0);
+
+  if (loadingData) {
+    return (
+      <div className='flex items-center justify-center h-64'>
+        <div className='text-sm text-muted-foreground'>加载数据中...</div>
+      </div>
+    );
+  }
 
   return (
     <div className='space-y-6'>
@@ -170,7 +265,7 @@ export function ProductionOrderForm({ initialData }: ProductionOrderFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockFinishedProducts.map((product) => (
+                          {finishedProducts.map((product) => (
                             <SelectItem key={product.id} value={product.id}>
                               <div className='flex items-center gap-2'>
                                 <Badge variant='outline' className='font-mono text-xs'>
@@ -224,7 +319,7 @@ export function ProductionOrderForm({ initialData }: ProductionOrderFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockSuppliers.map((supplier) => (
+                          {suppliers.map((supplier) => (
                             <SelectItem key={supplier.id} value={supplier.id}>
                               {supplier.name}
                             </SelectItem>

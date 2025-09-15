@@ -82,8 +82,8 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   };
 
   const canConfirm = data.status === 'draft';
-  const canMarkPaid = data.status === 'confirmed' && data.paymentStatus === 'unpaid';
-  const canMarkDelivered = data.status === 'confirmed' && data.deliveryStatus === 'pending';
+  const canMarkPaid = data.status === 'confirmed' && data.paymentStatus === 'UNPAID';
+  const canMarkDelivered = data.status === 'confirmed' && data.deliveryStatus === 'NOT_DELIVERED';
   const canDelete = data.status === 'draft' || data.status === 'cancelled';
 
   return (

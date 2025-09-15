@@ -7,7 +7,7 @@ import { BatchListingPage } from '@/features/inventory/components/batch-listing'
 import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
 
 interface BatchPageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     per_page?: string;
     sort?: string;
@@ -15,10 +15,10 @@ interface BatchPageProps {
     productSku?: string;
     sourceType?: string;
     productId?: string;
-  };
+  }>;
 }
 
-export default function BatchPage({ searchParams }: BatchPageProps) {
+export default async function BatchPage({ searchParams }: BatchPageProps) {
   return (
     <>
       <div className='flex items-start justify-between'>
@@ -40,7 +40,7 @@ export default function BatchPage({ searchParams }: BatchPageProps) {
           />
         }
       >
-        <BatchListingPage searchParams={searchParams} />
+        <BatchListingPage searchParams={await searchParams} />
       </Suspense>
     </>
   );

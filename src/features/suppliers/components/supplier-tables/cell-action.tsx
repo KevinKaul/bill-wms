@@ -16,7 +16,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { SupplierTableItem } from '@/types/supplier';
-import { suppliersApi } from '@/lib/api-client';
+import { createClientApi } from '@/lib/client-api';
+import { useAuth } from '@clerk/nextjs';
 
 interface CellActionProps {
   data: SupplierTableItem;
@@ -26,11 +27,13 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { getToken } = useAuth();
+  const clientApi = createClientApi(getToken);
 
   const onConfirm = async () => {
     try {
       setLoading(true);
-      const response = await suppliersApi.deleteSupplier(data.id);
+      const response = await clientApi.suppliers.deleteSupplier(data.id);
       
       if (response.success) {
         toast.success('供应商已删除');

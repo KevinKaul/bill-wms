@@ -10,7 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductTableItem } from "@/types/product";
-import { productsApi } from "@/lib/api-client";
+import { createClientApi } from "@/lib/client-api";
+import { useAuth } from "@clerk/nextjs";
 import { Edit, MoreHorizontal, Trash, Eye, Copy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -25,12 +26,14 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { getToken } = useAuth();
+  const clientApi = createClientApi(getToken);
   const { onDeleteProduct } = useProductTable();
 
   const onConfirm = async () => {
     try {
       setLoading(true);
-      const response = await productsApi.deleteProduct(data.id);
+      const response = await clientApi.products.deleteProduct(data.id);
 
       if (response.success) {
         toast.success("产品已删除");

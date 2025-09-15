@@ -33,7 +33,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ProductType } from "@/types/product";
 import { PRODUCT_TYPE_OPTIONS } from "@/constants/product";
-import { productsApi, storageApi } from "@/lib/api-client";
+import { createClientApi } from "@/lib/client-api";
+import { useAuth } from "@clerk/nextjs";
 import { productFormSchema, ProductFormData } from "@/lib/product-validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -57,6 +58,8 @@ export default function ProductForm({
   isEdit = false,
 }: ProductFormProps) {
   const router = useRouter();
+  const { getToken } = useAuth();
+  const clientApi = createClientApi(getToken);
   const [loading, setLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [createdProductName, setCreatedProductName] = useState("");
@@ -155,7 +158,7 @@ export default function ProductForm({
   useEffect(() => {
     const fetchRawMaterials = async () => {
       try {
-        const response = await productsApi.getProducts({
+        const response = await clientApi.products.getProducts({
           type: ProductType.RAW_MATERIAL,
           pageSize: 100, // 获取足够多的原材料
         });
@@ -183,7 +186,7 @@ export default function ProductForm({
     };
 
     fetchRawMaterials();
-  }, []);
+  }, [clientApi.products]);
 
   // 添加BOM项
   const addBOMItem = () => {
@@ -221,7 +224,7 @@ export default function ProductForm({
         ) {
           // 如果是File对象，说明FileUploader组件上传失败了，需要手动上传
           try {
-            const uploadResponse = await storageApi.uploadFile(
+            const uploadResponse = await clientApi.storage.uploadFile(
               imageFile,
               "products"
             );
@@ -294,9 +297,9 @@ export default function ProductForm({
       let response;
 
       if (isEdit && initialData?.id) {
-        response = await productsApi.updateProduct(initialData.id, productData);
+        response = await clientApi.products.updateProduct(initialData.id, productData);
       } else {
-        response = await productsApi.createProduct(productData);
+        response = await clientApi.products.createProduct(productData);
       }
 
       if (response.success) {

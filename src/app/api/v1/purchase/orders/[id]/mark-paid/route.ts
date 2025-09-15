@@ -7,14 +7,15 @@ import prisma from "@/lib/prisma";
 // 标记采购单为已付款
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证用户身份
     await requireAuth(request);
 
     // 验证路径参数
-    const { id } = validateRequest(idParamSchema, params);
+    const resolvedParams = await params;
+    const { id } = validateRequest(idParamSchema, resolvedParams);
 
     // 解析请求体
     const requestData = await request.json().catch(() => ({}));

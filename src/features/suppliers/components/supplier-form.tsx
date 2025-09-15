@@ -15,7 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { SupplierFormData } from '@/types/supplier';
 import { SUPPLIER_VALIDATION } from '@/constants/supplier';
-import { suppliersApi } from '@/lib/api-client';
+import { createClientApi } from '@/lib/client-api';
+import { useAuth } from '@clerk/nextjs';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
@@ -69,6 +70,8 @@ interface SupplierFormProps {
 
 export function SupplierForm({ initialData }: SupplierFormProps) {
   const router = useRouter();
+  const { getToken } = useAuth();
+  const clientApi = createClientApi(getToken);
   const [loading, setLoading] = useState(false);
 
   const isEdit = !!initialData?.id;
@@ -99,9 +102,9 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
       
       let response;
       if (isEdit && initialData?.id) {
-        response = await suppliersApi.updateSupplier(initialData.id, values);
+        response = await clientApi.suppliers.updateSupplier(initialData.id, values);
       } else {
-        response = await suppliersApi.createSupplier(values);
+        response = await clientApi.suppliers.createSupplier(values);
       }
       
       if (response.success) {

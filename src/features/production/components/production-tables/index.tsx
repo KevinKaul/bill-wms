@@ -48,11 +48,8 @@ export function ProductionTable({
 }: ProductionTableProps) {
   const { table } = useDataTable({
     data,
-    columns,
-    totalItems,
-    pageSizeOptions,
-    searchableColumns,
-    filterableColumns
+    columns: columns as any,
+    pageCount: Math.ceil(totalItems / 10)
   });
 
   return (

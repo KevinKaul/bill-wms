@@ -61,6 +61,7 @@ export const STATUS_COLORS = {
   transfer: 'bg-blue-100 text-blue-800',
   
   // 产品类型
+  all: 'bg-gray-100 text-gray-800',
   raw_material: 'bg-blue-100 text-blue-800',
   finished_product: 'bg-green-100 text-green-800',
   
@@ -102,6 +103,7 @@ export const STATUS_LABELS = {
   transfer: '调拨入库',
   
   // 产品类型
+  all: '全部',
   raw_material: '原材料',
   finished_product: '成品',
   

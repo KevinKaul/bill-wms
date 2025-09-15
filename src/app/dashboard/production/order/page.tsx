@@ -43,8 +43,6 @@ export default async function Page(props: pageProps) {
           fallback={
             <DataTableSkeleton
               columnCount={10}
-              searchableColumnCount={2}
-              filterableColumnCount={2}
               cellWidths={['10rem', '15rem', '12rem', '8rem', '8rem', '10rem', '8rem', '8rem', '10rem', '12rem']}
               shrinkZero
             />

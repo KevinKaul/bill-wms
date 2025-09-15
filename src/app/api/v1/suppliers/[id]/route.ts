@@ -20,7 +20,8 @@ export async function GET(
     await requireAuth(request);
 
     // 验证路径参数
-    const { id } = validateRequest(idParamSchema, params);
+    const resolvedParams = await params;
+    const { id } = validateRequest(idParamSchema, resolvedParams);
 
     // 查询供应商详情
     const supplier = await prisma.supplier.findUnique({
@@ -138,14 +139,15 @@ export async function GET(
 // 更新供应商
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证用户身份
     await requireAuth(request);
 
     // 验证路径参数
-    const { id } = validateRequest(idParamSchema, params);
+    const resolvedParams = await params;
+    const { id } = validateRequest(idParamSchema, resolvedParams);
 
     // 解析请求体
     const requestData = await request.json();
@@ -285,14 +287,15 @@ export async function PUT(
 // 删除供应商
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证用户身份
     await requireAuth(request);
 
     // 验证路径参数
-    const { id } = validateRequest(idParamSchema, params);
+    const resolvedParams = await params;
+    const { id } = validateRequest(idParamSchema, resolvedParams);
 
     // 检查供应商是否存在
     const existingSupplier = await prisma.supplier.findUnique({

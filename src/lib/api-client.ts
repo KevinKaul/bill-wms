@@ -3,6 +3,7 @@
  * 提供与后端API交互的方法
  */
 
+import "server-only";
 import { auth } from "@clerk/nextjs/server";
 
 type ApiResponse<T> = {

@@ -5,14 +5,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Package } from 'lucide-react';
 
 interface BatchDetailPageProps {
-  params: {
+  params: Promise<{
     batchId: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: BatchDetailPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
   return {
-    title: `批次详情 - ${params.batchId}`,
+    title: `批次详情 - ${resolvedParams.batchId}`,
     description: '查看原材料批次的详细信息，包括成本分摊、库存状态和操作记录'
   };
 }
@@ -47,11 +48,12 @@ function LoadingSkeleton() {
   );
 }
 
-export default function BatchDetailPage({ params }: BatchDetailPageProps) {
+export default async function BatchDetailPage({ params }: BatchDetailPageProps) {
+  const resolvedParams = await params;
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
       <Suspense fallback={<LoadingSkeleton />}>
-        <BatchDetail batchId={params.batchId} />
+        <BatchDetail batchId={resolvedParams.batchId} />
       </Suspense>
     </div>
   );

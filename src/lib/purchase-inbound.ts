@@ -77,7 +77,7 @@ export async function processPurchaseInbound(purchaseOrder: PurchaseOrder): Prom
   // 模拟API延迟
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  if (purchaseOrder.arrivalStatus !== 'arrived') {
+  if (purchaseOrder.arrivalStatus !== 'DELIVERED') {
     throw new Error('只能对已到货的采购单执行入库操作');
   }
 

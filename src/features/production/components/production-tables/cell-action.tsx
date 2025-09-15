@@ -25,7 +25,6 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ProductionOrderTableItem } from '@/types/production';
-import { fakeProductionApi } from '@/lib/mock-production';
 
 interface CellActionProps {
   data: ProductionOrderTableItem;
@@ -56,11 +55,29 @@ export function CellAction({ data }: CellActionProps) {
 
     setLoading(true);
     try {
-      await fakeProductionApi.updateProductionOrderStatus(data.id, 'confirmed');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/orders/${data.id}/start`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || '确认失败');
+      }
+
       toast.success('加工单已确认');
       router.refresh();
     } catch (error) {
-      toast.error('确认失败');
+      console.error('确认失败:', error);
+      toast.error(error instanceof Error ? error.message : '确认失败');
     } finally {
       setLoading(false);
     }
@@ -74,11 +91,29 @@ export function CellAction({ data }: CellActionProps) {
 
     setLoading(true);
     try {
-      await fakeProductionApi.updateProductionOrderStatus(data.id, 'in_progress');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/orders/${data.id}/start`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || '开始生产失败');
+      }
+
       toast.success('生产已开始');
       router.refresh();
     } catch (error) {
-      toast.error('开始生产失败');
+      console.error('开始生产失败:', error);
+      toast.error(error instanceof Error ? error.message : '开始生产失败');
     } finally {
       setLoading(false);
     }
@@ -90,13 +125,37 @@ export function CellAction({ data }: CellActionProps) {
       return;
     }
 
+    // 这里应该弹出对话框让用户输入实际产出数量
+    const actualQuantity = data.plannedQuantity; // 临时使用计划数量
+
     setLoading(true);
     try {
-      await fakeProductionApi.updateProductionOrderStatus(data.id, 'completed');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/orders/${data.id}/complete`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          actual_quantity: actualQuantity,
+          quality_status: 'passed',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || '完成生产失败');
+      }
+
       toast.success('生产已完成');
       router.refresh();
     } catch (error) {
-      toast.error('完成生产失败');
+      console.error('完成生产失败:', error);
+      toast.error(error instanceof Error ? error.message : '完成生产失败');
     } finally {
       setLoading(false);
     }
@@ -110,11 +169,29 @@ export function CellAction({ data }: CellActionProps) {
 
     setLoading(true);
     try {
-      await fakeProductionApi.updatePaymentStatus(data.id, 'paid');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/orders/${data.id}/mark-paid`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || '更新付款状态失败');
+      }
+
       toast.success('已标记为已付款');
       router.refresh();
     } catch (error) {
-      toast.error('更新付款状态失败');
+      console.error('更新付款状态失败:', error);
+      toast.error(error instanceof Error ? error.message : '更新付款状态失败');
     } finally {
       setLoading(false);
     }
@@ -128,11 +205,28 @@ export function CellAction({ data }: CellActionProps) {
 
     setLoading(true);
     try {
-      await fakeProductionApi.updateProductionOrderStatus(data.id, 'cancelled');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/orders/${data.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || '取消失败');
+      }
+
       toast.success('加工单已取消');
       router.refresh();
     } catch (error) {
-      toast.error('取消失败');
+      console.error('取消失败:', error);
+      toast.error(error instanceof Error ? error.message : '取消失败');
     } finally {
       setLoading(false);
     }

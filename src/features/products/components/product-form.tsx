@@ -186,7 +186,7 @@ export default function ProductForm({
     };
 
     fetchRawMaterials();
-  }, [clientApi.products]);
+  }, []);
 
   // 添加BOM项
   const addBOMItem = () => {

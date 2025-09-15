@@ -136,37 +136,35 @@ export function ProductionOrderForm({ initialData, orderId }: ProductionOrderFor
 
       setCheckingMaterials(true);
       try {
-        // 模拟物料需求检查 - 实际应该调用API检查BOM和库存
-        // 这里暂时使用模拟数据，实际项目中需要实现相应的API
-        const mockRequirements: MaterialRequirement[] = [
-          {
-            materialId: 'raw1',
-            materialSku: 'RAW001',
-            materialName: '原材料A',
-            requiredQuantity: watchedQuantity * 10,
-            availableQuantity: 150,
-            shortfall: Math.max(0, watchedQuantity * 10 - 150),
+        // 调用API检查物料需求
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/material-requirements`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          {
-            materialId: 'raw2',
-            materialSku: 'RAW002',
-            materialName: '原材料B',
-            requiredQuantity: watchedQuantity * 5,
-            availableQuantity: 80,
-            shortfall: Math.max(0, watchedQuantity * 5 - 80),
-          },
-        ];
+          body: JSON.stringify({
+            productId: watchedProductId,
+            quantity: watchedQuantity
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || '检查物料需求失败');
+        }
+
+        const result = await response.json();
         
-        const canProduceAll = mockRequirements.every(req => req.shortfall === 0);
-        const maxQuantity = Math.min(
-          ...mockRequirements.map(req => Math.floor(req.availableQuantity / (req.requiredQuantity / watchedQuantity)))
-        );
-        
-        setMaterialRequirements(mockRequirements);
-        setCanProduce(canProduceAll);
-        setMaxProducibleQuantity(maxQuantity);
+        if (result.success) {
+          setMaterialRequirements(result.data.materialRequirements);
+          setCanProduce(result.data.canProduce);
+          setMaxProducibleQuantity(result.data.maxProducibleQuantity);
+        } else {
+          throw new Error(result.error || '检查物料需求失败');
+        }
       } catch (error) {
         console.error('检查物料需求失败:', error);
+        toast.error(error instanceof Error ? error.message : '检查物料需求失败');
         setMaterialRequirements([]);
         setCanProduce(false);
         setMaxProducibleQuantity(0);

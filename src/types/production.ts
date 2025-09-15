@@ -46,6 +46,7 @@ export interface MaterialRequirement {
   requiredQuantity: number;
   availableQuantity: number;
   shortfall: number;
+  bomQuantity?: number; // BOM中配置的单位用量
 }
 
 export interface BOMItem {

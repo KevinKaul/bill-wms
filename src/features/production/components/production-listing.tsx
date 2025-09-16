@@ -42,7 +42,7 @@ export default function ProductionListingPage() {
       queryParams.append('sort', sort);
       queryParams.append('order', order);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/orders?${queryParams.toString()}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/production/orders?${queryParams.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -105,19 +105,19 @@ export default function ProductionListingPage() {
     console.log('筛选器变化:', filters);
   };
 
-  if (loading) {
-    return (
-      <div className='flex items-center justify-center h-32'>
-        <div className='text-sm text-muted-foreground'>加载中...</div>
-      </div>
-    );
-  }
-
   return (
-    <ProductionTable
-      data={data}
-      totalItems={totalItems}
-      onFiltersChange={handleFiltersChange}
-    />
+    <>
+      {loading ? (
+        <div className='flex items-center justify-center h-32'>
+          <div className='text-sm text-muted-foreground'>加载中...</div>
+        </div>
+      ) : (
+        <ProductionTable
+          data={data}
+          totalItems={totalItems}
+          onFiltersChange={handleFiltersChange}
+        />
+      )}
+    </>
   );
 }

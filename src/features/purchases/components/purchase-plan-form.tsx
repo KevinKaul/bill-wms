@@ -204,7 +204,7 @@ export function PurchasePlanForm({ planId, initialData }: PurchasePlanFormProps)
 
       let response;
       if (isEdit && planId) {
-        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/plans/${planId}`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/purchase/plans/${planId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -212,7 +212,7 @@ export function PurchasePlanForm({ planId, initialData }: PurchasePlanFormProps)
           body: JSON.stringify(requestData)
         });
       } else {
-        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/plans`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/purchase/plans`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

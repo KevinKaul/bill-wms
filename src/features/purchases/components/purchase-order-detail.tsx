@@ -25,7 +25,7 @@ export function PurchaseOrderDetail({ orderId }: PurchaseOrderDetailProps) {
       try {
         setLoading(true);
         const token = await getToken();
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/orders/${orderId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/purchase/orders/${orderId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },

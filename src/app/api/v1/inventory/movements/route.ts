@@ -8,7 +8,7 @@ import prisma from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   try {
     // 验证用户身份
-    await requireAuth(request);
+    await requireAuth();
 
     // 解析查询参数
     const url = new URL(request.url);
@@ -20,8 +20,12 @@ export async function GET(request: NextRequest) {
     const source_type = url.searchParams.get("source_type") || undefined;
     const date_from = url.searchParams.get("date_from") || undefined;
     const date_to = url.searchParams.get("date_to") || undefined;
-    const sort = url.searchParams.get("sort") || "createdAt";
-    const order = url.searchParams.get("order") || "desc";
+    const sortParam = url.searchParams.get("sort") || "createdAt.desc";
+    
+    // 解析排序参数 (格式: "field.direction")
+    const [sortField, sortOrder] = sortParam.includes('.') 
+      ? sortParam.split('.') 
+      : [sortParam, "desc"];
 
     // 验证查询参数
     const validatedParams = validateRequest(queryInventoryMovementsSchema, {
@@ -33,8 +37,8 @@ export async function GET(request: NextRequest) {
       source_type,
       date_from,
       date_to,
-      sort,
-      order,
+      sort: sortField,
+      order: sortOrder as "asc" | "desc",
     });
 
     // 构建查询条件

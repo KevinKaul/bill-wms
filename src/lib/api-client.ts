@@ -394,6 +394,93 @@ export const purchaseApi = {
 };
 
 /**
+ * 库存API服务
+ */
+export const inventoryApi = {
+  /**
+   * 获取库存概览
+   */
+  getInventoryOverview: async (params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    productType?: string;
+    lowStock?: boolean;
+    hasStock?: boolean;
+  }) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.productType) queryParams.append("productType", params.productType);
+    if (params.lowStock !== undefined) queryParams.append("lowStock", params.lowStock.toString());
+    if (params.hasStock !== undefined) queryParams.append("hasStock", params.hasStock.toString());
+
+    const url = `/api/v1/inventory/overview?${queryParams.toString()}`;
+    return apiRequest(url, "GET");
+  },
+
+  /**
+   * 获取批次列表
+   */
+  getBatches: async (params: {
+    page?: number;
+    per_page?: number;
+    sort?: string;
+    batchNumber?: string;
+    productSku?: string;
+    sourceType?: string;
+    productId?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.per_page) queryParams.append("per_page", params.per_page.toString());
+    if (params.sort) queryParams.append("sort", params.sort);
+    if (params.batchNumber) queryParams.append("batchNumber", params.batchNumber);
+    if (params.productSku) queryParams.append("productSku", params.productSku);
+    if (params.sourceType) queryParams.append("sourceType", params.sourceType);
+    if (params.productId) queryParams.append("productId", params.productId);
+
+    const url = `/api/v1/inventory/batches?${queryParams.toString()}`;
+    return apiRequest(url, "GET");
+  },
+
+  /**
+   * 获取移动记录列表
+   */
+  getMovements: async (params: {
+    page?: number;
+    per_page?: number;
+    sort?: string;
+    movementNumber?: string;
+    batchNumber?: string;
+    productSku?: string;
+    type?: string;
+    sourceType?: string;
+    batchId?: string;
+    productId?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.per_page) queryParams.append("per_page", params.per_page.toString());
+    if (params.sort) queryParams.append("sort", params.sort);
+    if (params.movementNumber) queryParams.append("movementNumber", params.movementNumber);
+    if (params.batchNumber) queryParams.append("batchNumber", params.batchNumber);
+    if (params.productSku) queryParams.append("productSku", params.productSku);
+    if (params.type) queryParams.append("type", params.type);
+    if (params.sourceType) queryParams.append("sourceType", params.sourceType);
+    if (params.batchId) queryParams.append("batchId", params.batchId);
+    if (params.productId) queryParams.append("productId", params.productId);
+
+    const url = `/api/v1/inventory/movements?${queryParams.toString()}`;
+    return apiRequest(url, "GET");
+  },
+};
+
+/**
  * 创建客户端API实例（用于客户端组件）
  * 使用方法：
  * ```
@@ -506,6 +593,81 @@ export function createClientApi(getToken: () => Promise<string | null>) {
           console.error("客户端上传错误:", error);
           throw error;
         }
+      },
+    },
+
+    inventory: {
+      getInventoryOverview: async (params: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        productType?: string;
+        lowStock?: boolean;
+        hasStock?: boolean;
+      }) => {
+        const queryParams = new URLSearchParams();
+
+        if (params.page) queryParams.append("page", params.page.toString());
+        if (params.limit) queryParams.append("limit", params.limit.toString());
+        if (params.search) queryParams.append("search", params.search);
+        if (params.productType) queryParams.append("productType", params.productType);
+        if (params.lowStock !== undefined) queryParams.append("lowStock", params.lowStock.toString());
+        if (params.hasStock !== undefined) queryParams.append("hasStock", params.hasStock.toString());
+
+        const url = `/api/v1/inventory/overview?${queryParams.toString()}`;
+        return clientApiRequest(url, "GET", undefined, getToken);
+      },
+
+      getBatches: async (params: {
+        page?: number;
+        per_page?: number;
+        sort?: string;
+        batchNumber?: string;
+        productSku?: string;
+        sourceType?: string;
+        productId?: string;
+      }) => {
+        const queryParams = new URLSearchParams();
+
+        if (params.page) queryParams.append("page", params.page.toString());
+        if (params.per_page) queryParams.append("per_page", params.per_page.toString());
+        if (params.sort) queryParams.append("sort", params.sort);
+        if (params.batchNumber) queryParams.append("batchNumber", params.batchNumber);
+        if (params.productSku) queryParams.append("productSku", params.productSku);
+        if (params.sourceType) queryParams.append("sourceType", params.sourceType);
+        if (params.productId) queryParams.append("productId", params.productId);
+
+        const url = `/api/v1/inventory/batches?${queryParams.toString()}`;
+        return clientApiRequest(url, "GET", undefined, getToken);
+      },
+
+      getMovements: async (params: {
+        page?: number;
+        per_page?: number;
+        sort?: string;
+        movementNumber?: string;
+        batchNumber?: string;
+        productSku?: string;
+        type?: string;
+        sourceType?: string;
+        batchId?: string;
+        productId?: string;
+      }) => {
+        const queryParams = new URLSearchParams();
+
+        if (params.page) queryParams.append("page", params.page.toString());
+        if (params.per_page) queryParams.append("per_page", params.per_page.toString());
+        if (params.sort) queryParams.append("sort", params.sort);
+        if (params.movementNumber) queryParams.append("movementNumber", params.movementNumber);
+        if (params.batchNumber) queryParams.append("batchNumber", params.batchNumber);
+        if (params.productSku) queryParams.append("productSku", params.productSku);
+        if (params.type) queryParams.append("type", params.type);
+        if (params.sourceType) queryParams.append("sourceType", params.sourceType);
+        if (params.batchId) queryParams.append("batchId", params.batchId);
+        if (params.productId) queryParams.append("productId", params.productId);
+
+        const url = `/api/v1/inventory/movements?${queryParams.toString()}`;
+        return clientApiRequest(url, "GET", undefined, getToken);
       },
     },
   };

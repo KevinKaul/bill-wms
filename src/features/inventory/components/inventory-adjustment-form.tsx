@@ -40,6 +40,7 @@ const adjustmentSchema = z.object({
 interface InventoryAdjustmentFormProps {
   productId?: string;
   batchId?: string;
+  defaultType?: 'increase' | 'decrease';
 }
 
 // 模拟产品数据
@@ -58,7 +59,7 @@ const mockInventory: Record<string, any> = {
   '4': { totalQuantity: 25, totalValue: 2250, avgUnitCost: 90, batchCount: 1 }
 };
 
-export function InventoryAdjustmentForm({ productId }: InventoryAdjustmentFormProps) {
+export function InventoryAdjustmentForm({ productId, defaultType }: InventoryAdjustmentFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -66,7 +67,7 @@ export function InventoryAdjustmentForm({ productId }: InventoryAdjustmentFormPr
     resolver: zodResolver(adjustmentSchema),
     defaultValues: {
       productId: productId || '',
-      adjustmentType: 'increase',
+      adjustmentType: defaultType || 'increase',
       quantity: 1,
       unitCost: undefined,
       reason: '',

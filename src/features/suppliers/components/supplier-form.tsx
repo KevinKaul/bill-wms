@@ -54,10 +54,10 @@ const formSchema = z.object({
     //   message: '请输入有效的手机号码'
     // }),
   email: z.string()
-    .optional()
-    .refine((val) => !val || SUPPLIER_VALIDATION.EMAIL_PATTERN.test(val), {
-      message: '请输入有效的邮箱地址'
-    }),
+    .optional(),
+    // .refine((val) => !val || SUPPLIER_VALIDATION.EMAIL_PATTERN.test(val), {
+    //   message: '请输入有效的邮箱地址'
+    // }),
   address: z.string().optional(),
   remark: z.string().optional()
 });

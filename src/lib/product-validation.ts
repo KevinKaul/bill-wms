@@ -40,7 +40,19 @@ export const productFormSchema = z.object({
   guidancePrice: z.number().optional().nullable(),
   bomItems: z.array(bomItemSchema).optional().default([]),
   id: z.string().optional(), // 用于编辑模式
-});
+}).refine(
+  (data) => {
+    // 如果是组合产品，必须至少有一个BOM项
+    if (data.type === ProductType.FINISHED_PRODUCT) {
+      return data.bomItems && data.bomItems.length > 0;
+    }
+    return true;
+  },
+  {
+    message: "组合产品必须至少包含一个原材料",
+    path: ["bomItems"],
+  }
+);
 
 // 服务端专用的基础字段（image类型不同）
 const serverBaseProductFields = {

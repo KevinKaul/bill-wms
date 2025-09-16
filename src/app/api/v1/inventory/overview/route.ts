@@ -86,10 +86,10 @@ export async function GET(request: NextRequest) {
         'RAW_MATERIAL' as category_id,
         '原材料' as category_name,
         COUNT(DISTINCT p.id) as products_count,
-        COALESCE(SUM(rmb.remaining_quantity), 0) as total_quantity,
-        COALESCE(SUM(rmb.remaining_quantity * rmb.actual_unit_price), 0) as total_value
+        COALESCE(SUM(rmb."remainingQuantity"), 0) as total_quantity,
+        COALESCE(SUM(rmb."remainingQuantity" * rmb."actualUnitPrice"), 0) as total_value
       FROM products p
-      LEFT JOIN raw_material_batches rmb ON p.id = rmb.product_id AND rmb.remaining_quantity > 0
+      LEFT JOIN raw_material_batches rmb ON p.id = rmb."productId" AND rmb."remainingQuantity" > 0
       WHERE p.type = 'RAW_MATERIAL' AND p.status = 'active'
     `;
 
@@ -98,10 +98,10 @@ export async function GET(request: NextRequest) {
         'FINISHED_PRODUCT' as category_id,
         '成品' as category_name,
         COUNT(DISTINCT p.id) as products_count,
-        COALESCE(SUM(fpb.remaining_quantity), 0) as total_quantity,
-        COALESCE(SUM(fpb.remaining_quantity * fpb.actual_unit_cost), 0) as total_value
+        COALESCE(SUM(fpb."remainingQuantity"), 0) as total_quantity,
+        COALESCE(SUM(fpb."remainingQuantity" * fpb."actualUnitCost"), 0) as total_value
       FROM products p
-      LEFT JOIN finished_product_batches fpb ON p.id = fpb.product_id AND fpb.remaining_quantity > 0
+      LEFT JOIN finished_product_batches fpb ON p.id = fpb."productId" AND fpb."remainingQuantity" > 0
       WHERE p.type = 'FINISHED_PRODUCT' AND p.status = 'active'
     `;
 

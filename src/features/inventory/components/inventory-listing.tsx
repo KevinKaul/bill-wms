@@ -1,7 +1,7 @@
 import { InventoryTableItem, type InventoryFilters } from '@/types/inventory';
-import { fakeInventoryApi } from '@/lib/mock-inventory';
 import { searchParamsCache } from '@/lib/searchparams';
 import { InventoryTable } from './inventory-tables';
+import { inventoryApi } from '@/lib/api-client';
 
 type InventoryListingPageProps = {};
 
@@ -21,28 +21,35 @@ export default async function InventoryListingPage({}: InventoryListingPageProps
       ? (productType as (typeof allowedProductTypes)[number])
       : undefined;
 
-  const filters = {
-    page,
-    limit: pageLimit ?? undefined,
-    ...(search && typeof search === 'string' && { search }),
+  // 调用封装的API获取库存数据
+  const apiParams = {
+    page: page || 1,
+    limit: pageLimit || 10,
+    ...(search && { search }),
     ...(normalizedProductType && { productType: normalizedProductType }),
     ...(lowStock && { lowStock: lowStock === 'true' }),
     ...(hasStock && { hasStock: hasStock === 'true' })
   };
 
-  const data = await fakeInventoryApi.getInventorySummary(filters);
-  const totalInventories = data.total_inventories;
-  const inventories: InventoryTableItem[] = data.inventories.map(inventory => ({
-    productId: inventory.productId,
-    productSku: inventory.productSku,
-    productName: inventory.productName,
-    productType: inventory.productType,
-    totalQuantity: inventory.totalQuantity,
-    totalValue: inventory.totalValue,
-    batchCount: inventory.batchCount,
-    avgUnitCost: inventory.avgUnitCost,
-    oldestBatchDate: inventory.oldestBatchDate.toISOString(),
-    lowStockAlert: inventory.lowStockAlert || false
+  const response = await inventoryApi.getInventoryOverview(apiParams);
+
+  if (!response.success) {
+    throw new Error(response.error?.message || '获取库存数据失败');
+  }
+
+  const data = response.data as any || {};
+  const totalInventories = data.total || 0;
+  const inventories: InventoryTableItem[] = (data.data || []).map((inventory: any) => ({
+    productId: inventory.productId || inventory.product_id,
+    productSku: inventory.productSku || inventory.product_sku,
+    productName: inventory.productName || inventory.product_name,
+    productType: inventory.productType || inventory.product_type,
+    totalQuantity: inventory.totalQuantity || inventory.total_quantity || 0,
+    totalValue: inventory.totalValue || inventory.total_value || 0,
+    batchCount: inventory.batchCount || inventory.batch_count || 0,
+    avgUnitCost: inventory.avgUnitCost || inventory.avg_unit_cost || 0,
+    oldestBatchDate: inventory.oldestBatchDate || inventory.oldest_batch_date || new Date().toISOString(),
+    lowStockAlert: inventory.lowStockAlert || inventory.low_stock_alert || false
   }));
 
   return (

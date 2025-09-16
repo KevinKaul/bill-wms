@@ -10,7 +10,7 @@ export default function Page() {
   return (
     <PageContainer scrollable={true}>
       <div className='flex flex-1 flex-col space-y-4'>
-        <Breadcrumbs />
+        {/* <Breadcrumbs /> */}
         <SupplierForm />
       </div>
     </PageContainer>

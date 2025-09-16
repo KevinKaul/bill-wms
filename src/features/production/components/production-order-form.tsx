@@ -79,7 +79,7 @@ export function ProductionOrderForm({ initialData, orderId }: ProductionOrderFor
         setLoadingData(true);
         
         // 加载成品列表
-        const productsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/products?type=FINISHED_PRODUCT`, {
+        const productsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/products?type=FINISHED_PRODUCT`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ export function ProductionOrderForm({ initialData, orderId }: ProductionOrderFor
         }
 
         // 加载供应商列表
-        const suppliersResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/suppliers?type=processing`, {
+        const suppliersResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/suppliers?type=processing`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ export function ProductionOrderForm({ initialData, orderId }: ProductionOrderFor
       setCheckingMaterials(true);
       try {
         // 调用API检查物料需求
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/material-requirements`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/production/material-requirements`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -185,7 +185,7 @@ export function ProductionOrderForm({ initialData, orderId }: ProductionOrderFor
 
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/orders`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/production/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

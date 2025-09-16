@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
 import { MovementTable } from './movement-tables';
-import { getMovements } from '@/lib/mock-inventory';
-import { MovementFilters } from '@/types/inventory';
+import { createClientApi } from '@/lib/client-api';
+import { useAuth } from '@clerk/nextjs';
+import { useEffect, useState } from 'react';
+import { MovementTableItem } from '@/types/inventory';
 
 interface MovementListingPageProps {
   searchParams: {
@@ -19,7 +21,13 @@ interface MovementListingPageProps {
   };
 }
 
-export async function MovementListingPage({ searchParams }: MovementListingPageProps) {
+export function MovementListingPage({ searchParams }: MovementListingPageProps) {
+  const { getToken, isSignedIn } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [movements, setMovements] = useState<MovementTableItem[]>([]);
+  const [totalMovements, setTotalMovements] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
   const {
     page,
     per_page,
@@ -35,30 +43,63 @@ export async function MovementListingPage({ searchParams }: MovementListingPageP
 
   const pageAsNumber = Number(page) || 1;
   const perPageAsNumber = Number(per_page) || 10;
-  const [sortBy, sortOrder] = (sort?.split('.') as [string, 'asc' | 'desc']) || ['movementDate', 'desc'];
+  const [sortBy, sortOrder] = (sort?.split('.') as [string, 'asc' | 'desc']) || ['createdAt', 'desc'];
 
-  const filters: MovementFilters = {
-    movementNumber,
-    batchNumber,
-    productSku,
-    type: type as any,
-    sourceType: sourceType as any,
-    batchId,
-    productId
-  };
+  useEffect(() => {
+    async function fetchMovements() {
+      if (!isSignedIn) return;
 
-  const { movements, total } = await getMovements({
-    page: pageAsNumber,
-    per_page: perPageAsNumber,
-    sort: sortBy,
-    order: sortOrder,
-    filters
-  });
+      try {
+        setLoading(true);
+        setError(null);
+
+        const clientApi = createClientApi(getToken);
+        
+        const apiParams = {
+          page: pageAsNumber,
+          per_page: perPageAsNumber,
+          sort: `${sortBy}.${sortOrder}`,
+          ...(movementNumber && { movementNumber }),
+          ...(batchNumber && { batchNumber }),
+          ...(productSku && { productSku }),
+          ...(type && { type }),
+          ...(sourceType && { sourceType }),
+          ...(batchId && { batchId }),
+          ...(productId && { productId })
+        };
+
+        const response = await clientApi.inventory.getMovements(apiParams);
+
+        if (response.success && response.data) {
+          const data = response.data as any;
+          setMovements(data.data || []);
+          setTotalMovements(data.total || 0);
+        } else {
+          setError(response.error?.message || '获取移动记录数据失败');
+        }
+      } catch (err) {
+        console.error('获取移动记录失败:', err);
+        setError('获取移动记录数据失败');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchMovements();
+  }, [isSignedIn, getToken, pageAsNumber, perPageAsNumber, sortBy, sortOrder, movementNumber, batchNumber, productSku, type, sourceType, batchId, productId]);
+
+  if (loading) {
+    return <div>加载中...</div>;
+  }
+
+  if (error) {
+    return <div>错误: {error}</div>;
+  }
 
   return (
     <MovementTable
       data={movements}
-      totalData={total}
+      totalData={totalMovements}
     />
   );
 }

@@ -1,11 +1,6 @@
-'use client';
-
 import { BatchTable } from './batch-tables';
-import { getBatches } from '@/lib/mock-inventory';
-import { getRawMaterialBatches } from '@/lib/purchase-inbound';
-import { BatchFilters } from '@/types/inventory';
-import { Button } from '@/components/ui/button';
-import { Plus, Download } from 'lucide-react';
+import { inventoryApi } from '@/lib/api-client';
+import { BatchTableItem } from '@/types/inventory';
 
 interface BatchListingPageProps {
   searchParams: {
@@ -34,20 +29,43 @@ export async function BatchListingPage({ searchParams }: BatchListingPageProps) 
   const perPageAsNumber = Number(per_page) || 10;
   const [sortBy, sortOrder] = (sort?.split('.') as [string, 'asc' | 'desc']) || ['inboundDate', 'desc'];
 
-  const filters: BatchFilters = {
-    batchNumber,
-    productSku,
-    sourceType: sourceType as any,
-    productId
-  };
-
-  const { batches, total } = await getBatches({
+  // 调用封装的API获取批次数据
+  const apiParams = {
     page: pageAsNumber,
     per_page: perPageAsNumber,
-    sort: sortBy,
-    order: sortOrder,
-    filters
-  });
+    sort: `${sortBy}.${sortOrder}`,
+    ...(batchNumber && { batchNumber }),
+    ...(productSku && { productSku }),
+    ...(sourceType && { sourceType }),
+    ...(productId && { productId })
+  };
+
+  const response = await inventoryApi.getBatches(apiParams);
+
+  if (!response.success) {
+    throw new Error(response.error?.message || '获取批次数据失败');
+  }
+
+  const data = response.data as any || {};
+  const apiData = data.data || [];
+  const total = data.total || 0;
+  
+  // 将API返回的数据格式映射到表格组件期望的格式
+  const batches: BatchTableItem[] = apiData.map((batch: any) => ({
+    id: batch.id,
+    batchNumber: batch.batch_number,
+    productSku: batch.product_sku,
+    productName: batch.product_name,
+    quantity: batch.remaining_quantity,
+    originalQuantity: batch.inbound_quantity,
+    unitCost: batch.unit_cost,
+    totalCost: batch.total_cost,
+    inboundDate: batch.inbound_date,
+    sourceType: batch.source_type?.toLowerCase() || 'purchase',
+    sourceId: batch.source_reference,
+    supplierCode: batch.supplier_name,
+    location: batch.location || '-'
+  }));
 
   return (
     <BatchTable

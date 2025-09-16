@@ -346,6 +346,6 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
   );
 }
 
-function isFileWithPreview(file: File): file is File & { preview: string } {
-  return "preview" in file && typeof file.preview === "string";
+function isFileWithPreview(file: any): file is File & { preview: string } {
+  return file && typeof file === 'object' && "preview" in file && typeof file.preview === "string";
 }

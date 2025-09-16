@@ -25,7 +25,7 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
       try {
         setLoading(true);
         const token = await getToken();
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/production/orders/${orderId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/production/orders/${orderId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },

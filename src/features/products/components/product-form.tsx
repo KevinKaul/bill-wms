@@ -203,6 +203,24 @@ export default function ProductForm({
     console.log("表单是否有效:", formState.isValid);
     console.log("表单错误:", formState.errors);
 
+    // 组合产品特殊检查
+    if (values.type === ProductType.FINISHED_PRODUCT) {
+      if (!values.bomItems || values.bomItems.length === 0) {
+        toast.error("组合产品必须至少添加一个原材料");
+        return;
+      }
+      
+      // 检查每个BOM项是否完整
+      const invalidBomItems = values.bomItems.filter(
+        item => !item.componentId || !item.quantity
+      );
+      
+      if (invalidBomItems.length > 0) {
+        toast.error("存在不完整的BOM项，请检查原材料和数量");
+        return;
+      }
+    }
+
     try {
       setLoading(true);
 
@@ -332,8 +350,16 @@ export default function ProductForm({
 
   const handleContinueCreate = () => {
     setShowSuccessDialog(false);
-    // 重置表单
-    form.reset();
+    // 重置表单，确保清空图片字段
+    form.reset({
+      sku: "",
+      name: "",
+      type: ProductType.RAW_MATERIAL,
+      referencePurchasePrice: undefined,
+      guidancePrice: undefined,
+      bomItems: [],
+      image: undefined
+    });
     toast.success("表单已清空，可以继续创建新产品");
   };
 
@@ -596,6 +622,13 @@ export default function ProductForm({
                       添加原材料
                     </Button>
                   </div>
+                  
+                  {/* 组合产品必须添加BOM项的提示 */}
+                  {watchedBomItems.length === 0 && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+                      <strong>注意：</strong> 组合产品必须至少添加一个原材料才能保存。
+                    </div>
+                  )}
 
                   {fields.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
@@ -724,7 +757,11 @@ export default function ProductForm({
               </Button>
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !formState.isValid || (
+                  // 组合产品且没有BOM项时禁用按钮
+                  watchedType === ProductType.FINISHED_PRODUCT && 
+                  (!watchedBomItems || watchedBomItems.length === 0)
+                )}
                 onClick={() => {
                   console.log("提交按钮被点击");
                   console.log("当前表单状态:", {

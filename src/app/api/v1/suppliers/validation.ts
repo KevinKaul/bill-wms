@@ -23,8 +23,6 @@ export const createSupplierSchema = z.object({
   phone: z.string().max(20, "电话号码长度不能超过20字符").optional(),
   email: z
     .string()
-    .email("邮箱格式不正确")
-    .max(100, "邮箱长度不能超过100字符")
     .optional(),
   address: z.string().max(500, "地址长度不能超过500字符").optional(),
 });

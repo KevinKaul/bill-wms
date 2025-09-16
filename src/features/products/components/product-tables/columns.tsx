@@ -23,7 +23,7 @@ function ImagePreview({
   alt,
   productName,
 }: {
-  src: string;
+  src: string | null | undefined;
   alt: string;
   productName: string;
 }) {
@@ -90,11 +90,11 @@ export const columns: ColumnDef<ProductTableItem>[] = [
     accessorKey: "image",
     header: "图片",
     cell: ({ row }) => {
-      const imageUrl = row.getValue("image") as string;
+      const imageUrl = row.getValue("image") as string | null | undefined;
       const productName = row.getValue("name") as string;
       return (
         <ImagePreview
-          src={imageUrl}
+          src={imageUrl || DEFAULT_PRODUCT_IMAGE}
           alt={productName}
           productName={productName}
         />

@@ -112,12 +112,12 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
       try {
         const token = await getToken();
         const [suppliersResponse, productsResponse] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/suppliers?per_page=100`, {
+          fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/suppliers?per_page=100`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
           }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/products?per_page=100`, {
+          fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/products?per_page=100`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
@@ -150,7 +150,7 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
     const loadOrderData = async () => {
       try {
         const token = await getToken();
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/orders/${orderId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/purchase/orders/${orderId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -204,7 +204,7 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
 
       let response;
       if (isEdit && orderId) {
-        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/orders/${orderId}`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/purchase/orders/${orderId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -213,7 +213,7 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
           body: JSON.stringify(requestData)
         });
       } else {
-        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/purchase/orders`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/purchase/orders`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

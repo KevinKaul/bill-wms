@@ -66,6 +66,20 @@ export async function POST(request: NextRequest) {
       const maxForThisMaterial = Math.floor(availableQuantity / Number(bomItem.quantity));
       maxProducibleQuantity = Math.min(maxProducibleQuantity, maxForThisMaterial);
 
+      // 计算加权平均单价
+      let totalCost = 0;
+      let totalQuantityForCost = 0;
+      
+      for (const level of inventoryLevels) {
+        if (Number(level.quantity) > 0 && level.unitCost) {
+          totalCost += Number(level.unitCost) * Number(level.quantity);
+          totalQuantityForCost += Number(level.quantity);
+        }
+      }
+      
+      const averageUnitCost = totalQuantityForCost > 0 ? totalCost / totalQuantityForCost : 0;
+      const materialTotalCost = averageUnitCost * requiredQuantity;
+
       materialRequirements.push({
         materialId: bomItem.componentId,
         materialSku: bomItem.component.sku,
@@ -73,7 +87,9 @@ export async function POST(request: NextRequest) {
         requiredQuantity,
         availableQuantity,
         shortfall,
-        bomQuantity: Number(bomItem.quantity)
+        bomQuantity: Number(bomItem.quantity),
+        unitCost: averageUnitCost,
+        totalCost: materialTotalCost
       });
     }
 

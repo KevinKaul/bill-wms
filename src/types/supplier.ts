@@ -18,6 +18,7 @@ export interface SupplierFormData {
   code: string;
   name: string;
   account: string;
+  type: 'material' | 'processing' | 'both';
   contactPerson?: string;
   phone?: string;
   email?: string;

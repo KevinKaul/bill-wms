@@ -8,7 +8,6 @@ import {
   Eye, 
   MoreHorizontal, 
   CheckCircle, 
-  Play, 
   Square,
   CreditCard,
   Trash2
@@ -27,6 +26,7 @@ import {
 import { ProductionOrderTableItem } from '@/types/production';
 import { deleteApi } from "@/lib/delete-api";
 import { useAuth } from '@clerk/nextjs';
+import { useProductionTable } from './index';
 
 interface CellActionProps {
   data: ProductionOrderTableItem;
@@ -36,6 +36,7 @@ export function CellAction({ data }: CellActionProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { getToken } = useAuth();
+  const { onRefresh } = useProductionTable();
 
   const onCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -51,8 +52,8 @@ export function CellAction({ data }: CellActionProps) {
   };
 
   const onConfirm = async () => {
-    if (data.status !== 'draft') {
-      toast.error('只能确认草稿状态的加工单');
+    if (data.status !== 'pending') {
+      toast.error('只能确认待处理状态的加工单');
       return;
     }
 
@@ -87,8 +88,8 @@ export function CellAction({ data }: CellActionProps) {
   };
 
   const onStartProduction = async () => {
-    if (data.status !== 'confirmed') {
-      toast.error('只能开始已确认的加工单');
+    if (data.status !== 'in_progress') {
+      toast.error('只能完成进行中的加工单');
       return;
     }
 
@@ -191,7 +192,10 @@ export function CellAction({ data }: CellActionProps) {
       }
 
       toast.success('已标记为已付款');
-      router.refresh();
+      // 刷新表格数据
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error('更新付款状态失败:', error);
       toast.error(error instanceof Error ? error.message : '更新付款状态失败');
@@ -201,8 +205,8 @@ export function CellAction({ data }: CellActionProps) {
   };
 
   const onCancel = async () => {
-    if (!['draft', 'confirmed'].includes(data.status)) {
-      toast.error('只能取消草稿或已确认的加工单');
+    if (!['pending', 'in_progress'].includes(data.status)) {
+      toast.error('只能取消待处理或进行中的加工单');
       return;
     }
 
@@ -246,7 +250,7 @@ export function CellAction({ data }: CellActionProps) {
           查看详情
         </DropdownMenuItem>
 
-        {data.status === 'draft' && (
+        {data.status === 'pending' && (
           <DropdownMenuItem onClick={onEdit}>
             <Edit className='mr-2 h-4 w-4' />
             编辑
@@ -256,17 +260,17 @@ export function CellAction({ data }: CellActionProps) {
         <DropdownMenuSeparator />
 
         {/* 状态操作 */}
-        {data.status === 'draft' && (
+        {data.status === 'pending' && (
           <DropdownMenuItem onClick={onConfirm} disabled={loading}>
             <CheckCircle className='mr-2 h-4 w-4' />
-            确认加工单
+            开始加工
           </DropdownMenuItem>
         )}
 
-        {data.status === 'confirmed' && (
+        {data.status === 'in_progress' && (
           <DropdownMenuItem onClick={onStartProduction} disabled={loading}>
-            <Play className='mr-2 h-4 w-4' />
-            开始生产
+            <Square className='mr-2 h-4 w-4' />
+            完成加工
           </DropdownMenuItem>
         )}
 
@@ -286,7 +290,7 @@ export function CellAction({ data }: CellActionProps) {
         )}
 
         {/* 取消操作 */}
-        {['draft', 'confirmed'].includes(data.status) && (
+        {['pending', 'in_progress'].includes(data.status) && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem 

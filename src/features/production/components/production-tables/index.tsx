@@ -5,10 +5,20 @@ import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import { ProductionOrderTableItem, ProductionOrderFilters } from '@/types/production';
 import { columns } from './columns';
+import { createContext, useContext } from 'react';
+
+// 创建生产订单表格操作上下文
+const ProductionTableContext = createContext<{
+  onRefresh?: () => void;
+}>({});
+
+// 导出 hook 供子组件使用
+export const useProductionTable = () => useContext(ProductionTableContext);
 
 interface ProductionTableProps {
   data: ProductionOrderTableItem[];
   totalItems: number;
+  onRefresh?: () => void;
   pageSizeOptions?: number[];
   searchableColumns?: { id: keyof ProductionOrderTableItem; title: string }[];
   filterableColumns?: { id: keyof ProductionOrderTableItem; title: string; options: { label: string; value: string }[] }[];
@@ -18,6 +28,7 @@ interface ProductionTableProps {
 export function ProductionTable({
   data,
   totalItems,
+  onRefresh,
   pageSizeOptions = [10, 20, 50, 100],
   searchableColumns = [
     { id: 'orderNumber', title: '加工单号' },
@@ -28,11 +39,9 @@ export function ProductionTable({
       id: 'status',
       title: '生产状态',
       options: [
-        { label: '草稿', value: 'draft' },
-        { label: '已确认', value: 'confirmed' },
-        { label: '生产中', value: 'in_progress' },
-        { label: '已完成', value: 'completed' },
-        { label: '已取消', value: 'cancelled' }
+        { label: '待处理', value: 'pending' },
+        { label: '进行中', value: 'in_progress' },
+        { label: '已完成', value: 'completed' }
       ]
     },
     {
@@ -46,16 +55,26 @@ export function ProductionTable({
   ],
   onFiltersChange
 }: ProductionTableProps) {
+  console.log('ProductionTable 接收到的数据:', { data, totalItems });
+  
+  const pageCount = Math.ceil(totalItems / 10);
+  
   const { table } = useDataTable({
     data,
-    columns: columns as any,
-    pageCount: Math.ceil(totalItems / 10)
+    columns,
+    pageCount: pageCount,
+    shallow: false,
+    debounceMs: 500
   });
 
+  console.log('useDataTable 返回的 table:', table);
+  console.log('table.getRowModel().rows:', table.getRowModel().rows);
+
   return (
-    <div className='space-y-4'>
-      <DataTableToolbar table={table} />
-      <DataTable table={table} />
-    </div>
+    <ProductionTableContext.Provider value={{ onRefresh }}>
+      <DataTable table={table}>
+        <DataTableToolbar table={table} />
+      </DataTable>
+    </ProductionTableContext.Provider>
   );
 }

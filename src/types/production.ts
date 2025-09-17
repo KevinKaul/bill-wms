@@ -47,6 +47,8 @@ export interface MaterialRequirement {
   availableQuantity: number;
   shortfall: number;
   bomQuantity?: number; // BOM中配置的单位用量
+  unitCost: number; // 加权平均单价
+  totalCost: number; // 总成本
 }
 
 export interface BOMItem {
@@ -60,11 +62,9 @@ export interface BOMItem {
 }
 
 export type ProductionStatus = 
-  | 'draft'           // 草稿
-  | 'confirmed'       // 已确认
-  | 'in_progress'     // 生产中
-  | 'completed'       // 已完成
-  | 'cancelled';      // 已取消
+  | 'pending'         // 待处理
+  | 'in_progress'     // 进行中
+  | 'completed';      // 已完成
 
 export type PaymentStatus = 
   | 'unpaid'          // 未付款
@@ -88,6 +88,12 @@ export interface ProductionOrderTableItem {
   totalCost: number;
   createdAt: string;
   completedAt?: string;
+  orderDate?: string;
+  startDate?: string;
+  completionDate?: string;
+  qualityStatus?: string;
+  remark?: string;
+  updatedAt?: string;
 }
 
 // 筛选器类型

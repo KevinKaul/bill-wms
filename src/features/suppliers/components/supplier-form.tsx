@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SupplierFormData } from '@/types/supplier';
 import { SUPPLIER_VALIDATION } from '@/constants/supplier';
 import { createClientApi } from '@/lib/client-api';
@@ -47,6 +48,9 @@ const formSchema = z.object({
     .max(SUPPLIER_VALIDATION.ACCOUNT_MAX_LENGTH, {
       message: `账号不能超过${SUPPLIER_VALIDATION.ACCOUNT_MAX_LENGTH}个字符`
     }),
+  type: z.enum(['material', 'processing', 'both'], {
+    errorMap: () => ({ message: '请选择供应商类型' })
+  }).default('material'),
   contactPerson: z.string().optional(),
   phone: z.string()
     .optional(),
@@ -84,6 +88,7 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
     code: initialData?.code || '',
     name: initialData?.name || '',
     account: initialData?.account || '',
+    type: (initialData as any)?.type || 'material',
     contactPerson: initialData?.contactPerson || '',
     phone: initialData?.phone || '',
     email: initialData?.email || '',
@@ -196,6 +201,32 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
                     </FormControl>
                     <FormDescription>
                       用于财务结算的账号信息
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='type'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>供应商类型 *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='请选择供应商类型' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value='material'>原材料供应商</SelectItem>
+                        <SelectItem value='processing'>加工供应商</SelectItem>
+                        <SelectItem value='both'>原材料+加工供应商</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      选择供应商提供的服务类型
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

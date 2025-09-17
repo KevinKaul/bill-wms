@@ -6,8 +6,8 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Next Shadcn Dashboard Starter",
-  description: "Basic dashboard with Next.js and Shadcn",
+  title: "WMS Dashboard",
+  description: "仓库管理系统",
 };
 
 export default function DashboardLayout({

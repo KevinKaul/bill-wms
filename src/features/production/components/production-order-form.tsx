@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
+import { useAuth } from '@clerk/nextjs';
+import { createClientApi } from '@/lib/client-api';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +51,7 @@ interface ProductionOrderFormProps {
 
 export function ProductionOrderForm({ initialData, orderId }: ProductionOrderFormProps) {
   const router = useRouter();
+  const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [materialRequirements, setMaterialRequirements] = useState<MaterialRequirement[]>([]);
   const [canProduce, setCanProduce] = useState(false);
@@ -72,57 +75,52 @@ export function ProductionOrderForm({ initialData, orderId }: ProductionOrderFor
   const watchedProductId = form.watch('productId');
   const watchedQuantity = form.watch('plannedQuantity');
 
+  // 使用 useCallback 稳定化数据加载函数
+  const loadInitialData = useCallback(async () => {
+    try {
+      setLoadingData(true);
+      const clientApi = createClientApi(getToken);
+      
+      // 加载成品列表
+      const productsResponse = await clientApi.products.getProducts({
+        type: 'FINISHED_PRODUCT',
+        pageSize: 100
+      });
+
+      if (productsResponse.success) {
+        const productsData = productsResponse.data as any;
+        setFinishedProducts(productsData.products.map((p: any) => ({
+          id: p.id,
+          sku: p.sku,
+          name: p.name,
+        })));
+      }
+
+      // 加载供应商列表
+      const suppliersResponse = await clientApi.suppliers.getSuppliers({
+        type: 'processing',
+        per_page: 100
+      });
+
+      if (suppliersResponse.success) {
+        const suppliersData = suppliersResponse.data as any;
+        setSuppliers(suppliersData.suppliers.map((s: any) => ({
+          id: s.id,
+          name: s.name || s.fullName || s.full_name,
+        })));
+      }
+    } catch (error) {
+      console.error('加载数据失败:', error);
+      toast.error('加载数据失败，请刷新页面重试');
+    } finally {
+      setLoadingData(false);
+    }
+  }, [getToken]);
+
   // 加载产品和供应商数据
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        setLoadingData(true);
-        
-        // 加载成品列表
-        const productsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/products?type=FINISHED_PRODUCT`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (productsResponse.ok) {
-          const productsResult = await productsResponse.json();
-          if (productsResult.success) {
-            setFinishedProducts(productsResult.data.products.map((p: any) => ({
-              id: p.id,
-              sku: p.sku,
-              name: p.name,
-            })));
-          }
-        }
-
-        // 加载供应商列表
-        const suppliersResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/suppliers?type=processing`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (suppliersResponse.ok) {
-          const suppliersResult = await suppliersResponse.json();
-          if (suppliersResult.success) {
-            setSuppliers(suppliersResult.data.suppliers.map((s: any) => ({
-              id: s.id,
-              name: s.fullName || s.full_name,
-            })));
-          }
-        }
-      } catch (error) {
-        console.error('加载数据失败:', error);
-      } finally {
-        setLoadingData(false);
-      }
-    };
-
     loadInitialData();
-  }, []);
+  }, [loadInitialData]);
 
   // 当产品或数量变化时，重新计算物料需求
   useEffect(() => {
@@ -223,9 +221,7 @@ export function ProductionOrderForm({ initialData, orderId }: ProductionOrderFor
 
   // 计算物料总成本
   const totalMaterialCost = materialRequirements.reduce((total, req) => {
-    // 模拟单价计算
-    const unitCost = req.materialSku === 'RAW001' ? 15.75 : 26.5;
-    return total + (req.requiredQuantity * unitCost);
+    return total + (req.totalCost || 0);
   }, 0);
 
   if (loadingData) {

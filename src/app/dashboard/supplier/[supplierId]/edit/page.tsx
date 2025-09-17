@@ -34,6 +34,7 @@ export default async function Page({ params }: PageProps) {
             code: supplier.code,
             name: supplier.name,
             account: supplier.account,
+            type: supplier.type,
             contactPerson: supplier.contactPerson,
             phone: supplier.phone,
             email: supplier.email,

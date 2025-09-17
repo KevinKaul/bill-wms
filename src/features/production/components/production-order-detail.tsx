@@ -36,6 +36,7 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
         }
 
         const data = await response.json();
+        console.log('加工单详情API响应:', data);
         setOrder(data.data);
       } catch (error) {
         console.error('Load order detail error:', error);
@@ -75,11 +76,9 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
   // 状态颜色映射
   const getStatusColor = (status: string) => {
     const colors = {
-      'draft': 'bg-gray-100 text-gray-800',
-      'confirmed': 'bg-blue-100 text-blue-800',
+      'pending': 'bg-gray-100 text-gray-800',
       'in_progress': 'bg-yellow-100 text-yellow-800',
-      'completed': 'bg-green-100 text-green-800',
-      'cancelled': 'bg-red-100 text-red-800'
+      'completed': 'bg-green-100 text-green-800'
     };
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -104,11 +103,9 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
   // 状态标签映射
   const getStatusLabel = (status: string) => {
     const labels = {
-      'draft': '草稿',
-      'confirmed': '已确认',
-      'in_progress': '生产中',
-      'completed': '已完成',
-      'cancelled': '已取消'
+      'pending': '待处理',
+      'in_progress': '进行中',
+      'completed': '已完成'
     };
     return labels[status as keyof typeof labels] || status;
   };
@@ -166,22 +163,22 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">加工单号</label>
-                <p className="text-sm font-mono">{order.orderNumber}</p>
+                <p className="text-sm font-mono">{order.order_number}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">产品信息</label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Badge variant="outline" className="text-xs">
-                    {order.product?.sku}
+                    {order.product_sku}
                   </Badge>
-                  <span className="text-sm">{order.product?.name}</span>
+                  <span className="text-sm">{order.product_name}</span>
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">加工供应商</label>
                 <div className="flex items-center space-x-2 mt-1">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{order.supplier?.fullName || order.supplier?.full_name || '未指定'}</span>
+                  <span className="text-sm">{order.supplier_name || '未指定'}</span>
                 </div>
               </div>
               <div>
@@ -196,28 +193,28 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">计划数量</label>
-                <p className="text-sm font-mono">{order.plannedQuantity}</p>
+                <p className="text-sm font-mono">{order.planned_quantity}</p>
               </div>
-              {order.actualQuantity && (
+              {order.actual_quantity && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">实际产出</label>
-                  <p className="text-sm font-mono">{order.actualQuantity}</p>
+                  <p className="text-sm font-mono">{order.actual_quantity}</p>
                 </div>
               )}
               <div>
                 <label className="text-sm font-medium text-muted-foreground">付款状态</label>
                 <div className="mt-1">
-                  <Badge className={getPaymentStatusColor(order.paymentStatus)}>
-                    {getPaymentStatusLabel(order.paymentStatus)}
+                  <Badge className={getPaymentStatusColor(order.payment_status)}>
+                    {getPaymentStatusLabel(order.payment_status)}
                   </Badge>
                 </div>
               </div>
-              {order.qualityStatus && (
+              {order.quality_status && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">质检状态</label>
                   <div className="mt-1">
-                    <Badge className={getQualityStatusColor(order.qualityStatus)}>
-                      {getQualityStatusLabel(order.qualityStatus)}
+                    <Badge className={getQualityStatusColor(order.quality_status)}>
+                      {getQualityStatusLabel(order.quality_status)}
                     </Badge>
                   </div>
                 </div>
@@ -226,24 +223,24 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
                 <label className="text-sm font-medium text-muted-foreground">创建时间</label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{new Date(order.orderDate).toLocaleString('zh-CN')}</span>
+                  <span className="text-sm">{order.order_date ? new Date(order.order_date).toLocaleString('zh-CN') : 'Invalid Date'}</span>
                 </div>
               </div>
-              {order.startDate && (
+              {order.start_date && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">开始时间</label>
                   <div className="flex items-center space-x-2 mt-1">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{new Date(order.startDate).toLocaleString('zh-CN')}</span>
+                    <span className="text-sm">{new Date(order.start_date).toLocaleString('zh-CN')}</span>
                   </div>
                 </div>
               )}
-              {order.completedDate && (
+              {order.completion_date && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">完成时间</label>
                   <div className="flex items-center space-x-2 mt-1">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{new Date(order.completedDate).toLocaleString('zh-CN')}</span>
+                    <span className="text-sm">{new Date(order.completion_date).toLocaleString('zh-CN')}</span>
                   </div>
                 </div>
               )}
@@ -270,51 +267,51 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">物料成本:</span>
-              <span className="font-mono">¥{order.materialCost?.toFixed(2) || '0.00'}</span>
+              <span className="font-mono">¥{order.material_cost?.toFixed(2) || '0.00'}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">加工费用:</span>
-              <span className="font-mono">¥{order.processingFee?.toFixed(2) || '0.00'}</span>
+              <span className="font-mono">¥{order.processing_fee?.toFixed(2) || '0.00'}</span>
             </div>
             <Separator />
             <div className="flex justify-between items-center text-lg font-medium">
               <span>总成本:</span>
-              <span className="font-mono text-primary">¥{order.totalCost?.toFixed(2) || '0.00'}</span>
+              <span className="font-mono text-primary">¥{order.total_cost?.toFixed(2) || '0.00'}</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* 物料使用明细 */}
-      {order.materialUsage && order.materialUsage.length > 0 && (
+      {order.material_usages && order.material_usages.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>物料使用明细</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {order.materialUsage.map((usage: any, index: number) => (
+              {order.material_usages.map((usage: any, index: number) => (
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <Badge variant="outline" className="text-xs">
-                        {usage.material?.sku}
+                        {usage.product_sku}
                       </Badge>
-                      <span className="font-medium">{usage.material?.name}</span>
+                      <span className="font-medium">{usage.product_name}</span>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">使用数量:</span>
-                      <span className="ml-2 font-mono">{usage.usedQuantity}</span>
+                      <span className="ml-2 font-mono">{usage.used_quantity}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">单位成本:</span>
-                      <span className="ml-2 font-mono">¥{usage.unitCost?.toFixed(2) || '0.00'}</span>
+                      <span className="ml-2 font-mono">¥{usage.unit_cost?.toFixed(2) || '0.00'}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">总成本:</span>
-                      <span className="ml-2 font-mono font-medium">¥{usage.totalCost?.toFixed(2) || '0.00'}</span>
+                      <span className="ml-2 font-mono font-medium">¥{usage.total_cost?.toFixed(2) || '0.00'}</span>
                     </div>
                   </div>
                 </div>
@@ -325,33 +322,31 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
       )}
 
       {/* 成品批次信息 */}
-      {order.finishedProductBatches && order.finishedProductBatches.length > 0 && (
+      {order.finished_batches && order.finished_batches.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>成品批次信息</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {order.finishedProductBatches.map((batch: any, index: number) => (
+              {order.finished_batches.map((batch: any, index: number) => (
                 <div key={index} className="border rounded-lg p-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">批次号:</span>
-                      <span className="ml-2 font-mono">{batch.batchNumber}</span>
+                      <span className="ml-2 font-mono">{batch.batch_number}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">数量:</span>
-                      <span className="ml-2 font-mono">{batch.quantity}</span>
+                      <span className="ml-2 font-mono">{batch.inbound_quantity}</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">生产日期:</span>
-                      <span className="ml-2">{new Date(batch.productionDate).toLocaleDateString('zh-CN')}</span>
+                      <span className="text-muted-foreground">入库日期:</span>
+                      <span className="ml-2">{batch.inbound_date ? new Date(batch.inbound_date).toLocaleDateString('zh-CN') : '-'}</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">质检状态:</span>
-                      <Badge className={getQualityStatusColor(batch.qualityStatus)}>
-                        {getQualityStatusLabel(batch.qualityStatus)}
-                      </Badge>
+                      <span className="text-muted-foreground">单位成本:</span>
+                      <span className="ml-2 font-mono">¥{batch.actual_unit_cost?.toFixed(2) || '0.00'}</span>
                     </div>
                   </div>
                 </div>

@@ -55,8 +55,10 @@ export const columns: ColumnDef<ProductionOrderTableItem>[] = [
       
       return (
         <div className='flex flex-col gap-1'>
-          <span className='text-sm'>计划: {plannedQuantity.toLocaleString()}</span>
-          {actualQuantity !== undefined && (
+          <span className='text-sm'>
+            计划: {plannedQuantity != null ? plannedQuantity.toLocaleString() : '-'}
+          </span>
+          {actualQuantity != null && (
             <span className='text-xs text-muted-foreground'>
               实际: {actualQuantity.toLocaleString()}
             </span>
@@ -128,7 +130,10 @@ export const columns: ColumnDef<ProductionOrderTableItem>[] = [
       const materialCost = row.getValue('materialCost') as number;
       return (
         <span className='text-sm font-medium'>
-          ¥{materialCost.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+          {materialCost != null 
+            ? `¥${materialCost.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
+            : '-'
+          }
         </span>
       );
     }
@@ -142,7 +147,10 @@ export const columns: ColumnDef<ProductionOrderTableItem>[] = [
       const processingFee = row.getValue('processingFee') as number;
       return (
         <span className='text-sm'>
-          ¥{processingFee.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+          {processingFee != null 
+            ? `¥${processingFee.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
+            : '-'
+          }
         </span>
       );
     }
@@ -156,7 +164,10 @@ export const columns: ColumnDef<ProductionOrderTableItem>[] = [
       const totalCost = row.getValue('totalCost') as number;
       return (
         <span className='text-sm font-medium'>
-          ¥{totalCost.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+          {totalCost != null 
+            ? `¥${totalCost.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
+            : '-'
+          }
         </span>
       );
     }

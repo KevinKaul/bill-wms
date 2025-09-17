@@ -16,6 +16,7 @@ export default function ProductionListingPage({}: ProductionListingPageProps) {
   const [orders, setOrders] = useState<ProductionOrderTableItem[]>([]);
   const [totalOrders, setTotalOrders] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -57,7 +58,8 @@ export default function ProductionListingPage({}: ProductionListingPageProps) {
         const clientApi = createClientApi(getToken);
         const response = await clientApi.production.getOrders(filters);
 
-        console.log('API响应:', response.data);
+        console.log('API响应:', response);
+        console.log('API响应数据:', response.data);
 
         if (!response.success) {
           throw new Error(response.error?.message || '获取加工单列表失败');
@@ -67,30 +69,37 @@ export default function ProductionListingPage({}: ProductionListingPageProps) {
         const apiData = data.orders || [];
         const total = data.total || 0;
 
+        console.log('解析后的数据:', { apiData, total });
+
         // 将API返回的数据格式映射到表格组件期望的格式
-        const orderList: ProductionOrderTableItem[] = apiData.map((order: any) => ({
-          id: order.id,
-          orderNumber: order.order_number,
-          productInfo: {
-            sku: order.product_sku,
-            name: order.product_name,
-          },
-          plannedQuantity: order.planned_quantity,
-          actualQuantity: order.actual_quantity,
-          materialCost: order.material_cost,
-          processingFee: order.processing_fee,
-          totalCost: order.total_cost,
-          supplierName: order.supplier_name,
-          status: order.status,
-          paymentStatus: order.payment_status,
-          orderDate: order.order_date,
-          startDate: order.start_date,
-          completionDate: order.completion_date,
-          qualityStatus: order.quality_status,
-          remark: order.remark,
-          createdAt: order.created_at,
-          updatedAt: order.updated_at,
-        }));
+        const orderList: ProductionOrderTableItem[] = apiData.map((order: any) => {
+          console.log('映射单个订单:', order);
+          return {
+            id: order.id,
+            orderNumber: order.order_number,
+            productInfo: {
+              sku: order.product_sku || '',
+              name: order.product_name || '',
+            },
+            plannedQuantity: order.planned_quantity != null ? Number(order.planned_quantity) : 0,
+            actualQuantity: order.actual_quantity != null ? Number(order.actual_quantity) : undefined,
+            materialCost: order.material_cost != null ? Number(order.material_cost) : 0,
+            processingFee: order.processing_fee != null ? Number(order.processing_fee) : 0,
+            totalCost: order.total_cost != null ? Number(order.total_cost) : 0,
+            supplierName: order.supplier_name,
+            status: order.status,
+            paymentStatus: order.payment_status,
+            orderDate: order.order_date,
+            startDate: order.start_date,
+            completionDate: order.completion_date,
+            qualityStatus: order.quality_status,
+            remark: order.remark,
+            createdAt: order.created_at,
+            updatedAt: order.updated_at,
+          };
+        });
+
+        console.log('映射后的订单列表:', orderList);
 
         setOrders(orderList);
         setTotalOrders(total);
@@ -103,7 +112,12 @@ export default function ProductionListingPage({}: ProductionListingPageProps) {
     };
 
     fetchOrders();
-  }, [isSignedIn, getToken, searchParams]);
+  }, [isSignedIn, getToken, searchParams, refreshTrigger]);
+
+  // 刷新数据的函数
+  const refreshData = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   if (loading) {
     return <div className="p-4">加载中...</div>;
@@ -133,6 +147,7 @@ export default function ProductionListingPage({}: ProductionListingPageProps) {
     <ProductionTable
       data={orders}
       totalItems={totalOrders}
+      onRefresh={refreshData}
     />
   );
 }

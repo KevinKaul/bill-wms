@@ -148,7 +148,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (validatedParams.type) {
-      where.type = validatedParams.type;
+      // 支持包含关系的类型查询
+      if (validatedParams.type === 'material') {
+        where.type = { in: ['material', 'both'] };
+      } else if (validatedParams.type === 'processing') {
+        where.type = { in: ['processing', 'both'] };
+      } else if (validatedParams.type === 'both') {
+        where.type = 'both';
+      }
     }
 
     if (validatedParams.status) {

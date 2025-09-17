@@ -2,11 +2,9 @@ import { ProductionStatus, PaymentStatus } from '@/types/production';
 
 // 生产状态选项
 export const PRODUCTION_STATUS_OPTIONS = [
-  { value: 'draft', label: '草稿' },
-  { value: 'confirmed', label: '已确认' },
-  { value: 'in_progress', label: '生产中' },
-  { value: 'completed', label: '已完成' },
-  { value: 'cancelled', label: '已取消' }
+  { value: 'pending', label: '待处理' },
+  { value: 'in_progress', label: '进行中' },
+  { value: 'completed', label: '已完成' }
 ] as const;
 
 // 付款状态选项
@@ -17,11 +15,9 @@ export const PAYMENT_STATUS_OPTIONS = [
 
 // 状态颜色映射
 export const PRODUCTION_STATUS_COLORS: Record<ProductionStatus, string> = {
-  draft: 'bg-gray-100 text-gray-800',
-  confirmed: 'bg-blue-100 text-blue-800',
+  pending: 'bg-gray-100 text-gray-800',
   in_progress: 'bg-yellow-100 text-yellow-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800'
+  completed: 'bg-green-100 text-green-800'
 };
 
 export const PAYMENT_STATUS_COLORS: Record<PaymentStatus, string> = {
@@ -31,11 +27,9 @@ export const PAYMENT_STATUS_COLORS: Record<PaymentStatus, string> = {
 
 // 状态标签映射
 export const PRODUCTION_STATUS_LABELS: Record<ProductionStatus, string> = {
-  draft: '草稿',
-  confirmed: '已确认',
-  in_progress: '生产中',
-  completed: '已完成',
-  cancelled: '已取消'
+  pending: '待处理',
+  in_progress: '进行中',
+  completed: '已完成'
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {

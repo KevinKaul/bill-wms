@@ -294,6 +294,50 @@ export function createClientApi(getToken: () => Promise<string | null>) {
         const url = `/api/v1/inventory/movements?${queryParams.toString()}`;
         return clientApiRequest(url, "GET", undefined, getToken);
       },
+
+      // 库存调整相关API
+      createAdjustment: async (adjustmentData: {
+        product_id: string;
+        type: 'increase' | 'decrease';
+        quantity: number;
+        unit_cost?: number;
+        reason: string;
+        remark?: string;
+      }) => {
+        return clientApiRequest(
+          "/api/v1/inventory/adjustments",
+          "POST",
+          adjustmentData,
+          getToken
+        );
+      },
+
+      getAdjustments: async (params: {
+        page?: number;
+        per_page?: number;
+        product_id?: string;
+        type?: string;
+        reason?: string;
+        date_from?: string;
+        date_to?: string;
+        sort?: string;
+        order?: 'asc' | 'desc';
+      }) => {
+        const queryParams = new URLSearchParams();
+
+        if (params.page) queryParams.append("page", params.page.toString());
+        if (params.per_page) queryParams.append("per_page", params.per_page.toString());
+        if (params.product_id) queryParams.append("product_id", params.product_id);
+        if (params.type) queryParams.append("type", params.type);
+        if (params.reason) queryParams.append("reason", params.reason);
+        if (params.date_from) queryParams.append("date_from", params.date_from);
+        if (params.date_to) queryParams.append("date_to", params.date_to);
+        if (params.sort) queryParams.append("sort", params.sort);
+        if (params.order) queryParams.append("order", params.order);
+
+        const url = `/api/v1/inventory/adjustments?${queryParams.toString()}`;
+        return clientApiRequest(url, "GET", undefined, getToken);
+      },
     },
 
     // 生产模块API

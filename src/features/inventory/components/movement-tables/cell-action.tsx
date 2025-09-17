@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MoreHorizontal, Copy, Eye, FileText, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -26,6 +25,10 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const onCopy = () => {
     navigator.clipboard.writeText(data.movementNumber);
     toast.success('已复制移动编号到剪贴板');
+  };
+
+  const onViewDetail = () => {
+    router.push(`/dashboard/inventory/movement/${data.id}`);
   };
 
   const onViewBatch = () => {
@@ -64,12 +67,15 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
         <DropdownMenuLabel>操作</DropdownMenuLabel>
+        <DropdownMenuItem onClick={onViewDetail}>
+          <Eye className='mr-2 h-4 w-4' /> 查看详情
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onCopy}>
           <Copy className='mr-2 h-4 w-4' /> 复制编号
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onViewBatch}>
-          <Eye className='mr-2 h-4 w-4' /> 查看批次
+          <FileText className='mr-2 h-4 w-4' /> 查看批次
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onViewSource}>
           <FileText className='mr-2 h-4 w-4' /> 查看来源

@@ -203,7 +203,7 @@ export async function PUT(
 
     // 只更新提供的字段
     if (validatedData.code !== undefined) updateData.code = validatedData.code;
-    if (validatedData.name !== undefined) updateData.name = validatedData.name;
+    if (validatedData.name !== undefined) updateData.fullName = validatedData.name;
     if (validatedData.account !== undefined)
       updateData.account = validatedData.account;
     if (validatedData.type !== undefined) updateData.type = validatedData.type;

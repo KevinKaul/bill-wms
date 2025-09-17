@@ -72,7 +72,34 @@ export function MovementListingPage({ searchParams }: MovementListingPageProps) 
 
         if (response.success && response.data) {
           const data = response.data as any;
-          setMovements(data.data || []);
+          console.log('API返回的数据:', data); // 添加调试日志
+          
+          // API返回的数据结构是 { movements: [...], total: number }
+          const movementList = data.movements || [];
+          console.log('解析的移动记录:', movementList); // 添加调试日志
+          
+          // 数据映射：将API返回的snake_case字段映射为前端期望的camelCase
+          const mappedMovements = movementList.map((movement: any) => ({
+            id: movement.id,
+            movementNumber: movement.id, // 使用ID作为移动编号
+            batchNumber: movement.batch_number || 'N/A',
+            productSku: movement.product_sku,
+            productName: movement.product_name,
+            type: movement.movement_type,
+            quantity: Number(movement.quantity || 0),
+            unitCost: Number(movement.unit_cost || 0),
+            totalCost: Number(movement.total_cost || 0),
+            remainingQuantity: Number(movement.quantity || 0), // 暂时使用quantity
+            sourceType: movement.source_type,
+            sourceReference: movement.source_reference,
+            fromLocation: movement.from_location,
+            toLocation: movement.to_location,
+            operatorName: 'System', // 暂时硬编码
+            movementDate: movement.created_at
+          }));
+          
+          console.log('映射后的数据:', mappedMovements); // 添加调试日志
+          setMovements(mappedMovements);
           setTotalMovements(data.total || 0);
         } else {
           setError(response.error?.message || '获取移动记录数据失败');

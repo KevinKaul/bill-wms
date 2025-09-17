@@ -113,7 +113,7 @@ export interface InventoryAdjustmentFormData {
   productId: string;
   adjustmentType: 'increase' | 'decrease';
   quantity: number;
-  unitCost?: number; // 增加库存时需要
+  unitCost: number; // 增加库存时必须大于0
   reason: string;
   remark?: string;
 }

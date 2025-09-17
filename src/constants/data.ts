@@ -83,10 +83,10 @@ export const navItems: NavItem[] = [
             title: '成品批次',
             url: '/dashboard/inventory/batch/finished-product'
           },
-          {
-            title: '库存调整',
-            url: '/dashboard/inventory/adjustment'
-          },
+          // {
+          //   title: '库存调整',
+          //   url: '/dashboard/inventory/adjustment'
+          // },
           {
             title: '库存移动',
             url: '/dashboard/inventory/movement'
@@ -102,11 +102,6 @@ export const navItems: NavItem[] = [
         title: '移动记录',
         url: '/dashboard/inventory/movement',
         icon: 'arrowRight'
-      },
-      {
-        title: '库存调整',
-        url: '/dashboard/inventory/adjust',
-        icon: 'userPen'
       }
     ]
   },

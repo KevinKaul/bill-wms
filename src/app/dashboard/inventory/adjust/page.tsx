@@ -20,8 +20,8 @@ export default async function AdjustPage({ searchParams }: AdjustPageProps) {
   const { productId, batchId, type } = await searchParams;
 
   return (
-    <PageContainer scrollable={false}>
-      <div className="flex flex-1 flex-col space-y-4">
+    <PageContainer scrollable={true}>
+      <div className="flex flex-1 flex-col space-y-4 pb-8">
         <div className="flex items-start justify-between">
           <Heading
             title="库存调整"

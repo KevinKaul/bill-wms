@@ -83,25 +83,101 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // 如果是增加库存，可能需要创建新的批次（这里简化处理）
-      if (
-        validatedData.type === "increase" &&
-        product.type === "RAW_MATERIAL" &&
-        validatedData.unit_cost
-      ) {
-        // 生成调整批次号
-        const batchNumber = `ADJ${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}${String(new Date().getDate()).padStart(2, "0")}${String(Date.now()).slice(-4)}`;
-
-        await tx.rawMaterialBatch.create({
-          data: {
-            batchNumber,
-            productId: validatedData.product_id,
-            purchaseOrderId: null, // 调整没有关联采购单
-            inboundQuantity: validatedData.quantity,
-            remainingQuantity: validatedData.quantity,
-            actualUnitPrice: validatedData.unit_cost,
-          },
+      // 如果是增加库存，需要更新库存水平表
+      if (validatedData.type === "increase" && validatedData.unit_cost) {
+        // 查找或创建默认仓库位置
+        let defaultLocation = await tx.location.findFirst({
+          where: { code: 'DEFAULT' }
         });
+        
+        if (!defaultLocation) {
+          defaultLocation = await tx.location.create({
+            data: {
+              code: 'DEFAULT',
+              name: '默认仓库',
+              type: 'warehouse',
+              status: 'active'
+            }
+          });
+        }
+
+        // 查找现有库存记录
+        const existingInventory = await tx.inventoryLevel.findFirst({
+          where: {
+            productId: validatedData.product_id,
+            locationId: defaultLocation.id
+          }
+        });
+
+        if (existingInventory) {
+          // 更新现有库存
+          const newQuantity = Number(existingInventory.quantity) + validatedData.quantity;
+          const newTotalCost = Number(existingInventory.totalCost) + (validatedData.quantity * validatedData.unit_cost);
+          const newUnitCost = newTotalCost / newQuantity;
+
+          await tx.inventoryLevel.update({
+            where: { id: existingInventory.id },
+            data: {
+              quantity: newQuantity,
+              availableQuantity: Number(existingInventory.availableQuantity) + validatedData.quantity,
+              unitCost: newUnitCost,
+              totalCost: newTotalCost,
+              updatedAt: new Date()
+            }
+          });
+        } else {
+          // 创建新库存记录
+          await tx.inventoryLevel.create({
+            data: {
+              productId: validatedData.product_id,
+              locationId: defaultLocation.id,
+              quantity: validatedData.quantity,
+              availableQuantity: validatedData.quantity,
+              unitCost: validatedData.unit_cost,
+              totalCost: validatedData.quantity * validatedData.unit_cost
+            }
+          });
+        }
+      }
+
+      // 如果是减少库存，需要减少库存水平表
+      if (validatedData.type === "decrease") {
+        // 查找默认仓库位置
+        const defaultLocation = await tx.location.findFirst({
+          where: { code: 'DEFAULT' }
+        });
+        
+        if (defaultLocation) {
+          const existingInventory = await tx.inventoryLevel.findFirst({
+            where: {
+              productId: validatedData.product_id,
+              locationId: defaultLocation.id
+            }
+          });
+
+          if (existingInventory && Number(existingInventory.quantity) >= validatedData.quantity) {
+            const newQuantity = Number(existingInventory.quantity) - validatedData.quantity;
+            const newAvailableQuantity = Number(existingInventory.availableQuantity) - validatedData.quantity;
+            
+            if (newQuantity > 0) {
+              // 更新库存数量
+              await tx.inventoryLevel.update({
+                where: { id: existingInventory.id },
+                data: {
+                  quantity: newQuantity,
+                  availableQuantity: Math.max(0, newAvailableQuantity),
+                  totalCost: newQuantity * Number(existingInventory.unitCost),
+                  updatedAt: new Date()
+                }
+              });
+            } else {
+              // 删除库存记录
+              await tx.inventoryLevel.delete({
+                where: { id: existingInventory.id }
+              });
+            }
+          }
+        }
       }
 
       return adjustment;

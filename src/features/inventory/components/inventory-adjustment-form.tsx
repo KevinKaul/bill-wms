@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useAuth } from '@clerk/nextjs';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,8 +17,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { INVENTORY_VALIDATION, ADJUSTMENT_TYPE_OPTIONS, COMMON_ADJUSTMENT_REASONS } from '@/constants/inventory';
-// 简化实现，暂时使用静态数据
 import { InventoryAdjustmentFormData } from '@/types/inventory';
+import { createClientApi } from '@/lib/client-api';
 
 const adjustmentSchema = z.object({
   productId: z.string().min(1, '请选择产品'),
@@ -28,9 +29,8 @@ const adjustmentSchema = z.object({
     .min(INVENTORY_VALIDATION.QUANTITY_MIN + 1, '调整数量必须大于0')
     .max(INVENTORY_VALIDATION.QUANTITY_MAX, `调整数量不能超过${INVENTORY_VALIDATION.QUANTITY_MAX}`),
   unitCost: z.number()
-    .min(INVENTORY_VALIDATION.UNIT_COST_MIN, `单位成本不能低于${INVENTORY_VALIDATION.UNIT_COST_MIN}`)
-    .max(INVENTORY_VALIDATION.UNIT_COST_MAX, `单位成本不能超过${INVENTORY_VALIDATION.UNIT_COST_MAX}`)
-    .optional(),
+    .min(0, '单位成本不能为负数')
+    .max(INVENTORY_VALIDATION.UNIT_COST_MAX, `单位成本不能超过${INVENTORY_VALIDATION.UNIT_COST_MAX}`),
   reason: z.string()
     .min(INVENTORY_VALIDATION.REASON_MIN_LENGTH, `调整原因至少${INVENTORY_VALIDATION.REASON_MIN_LENGTH}个字符`)
     .max(INVENTORY_VALIDATION.REASON_MAX_LENGTH, `调整原因不能超过${INVENTORY_VALIDATION.REASON_MAX_LENGTH}个字符`),
@@ -43,25 +43,27 @@ interface InventoryAdjustmentFormProps {
   defaultType?: 'increase' | 'decrease';
 }
 
-// 模拟产品数据
-const mockProducts = [
-  { id: '1', sku: 'RAW001', name: '原材料A' },
-  { id: '2', sku: 'RAW002', name: '原材料B' },
-  { id: '3', sku: 'FIN001', name: '成品A' },
-  { id: '4', sku: 'FIN002', name: '成品B' }
-];
+interface Product {
+  id: string;
+  sku: string;
+  name: string;
+}
 
-// 模拟库存数据
-const mockInventory: Record<string, any> = {
-  '1': { totalQuantity: 150, totalValue: 2362.5, avgUnitCost: 15.75, batchCount: 2 },
-  '2': { totalQuantity: 45, totalValue: 1192.5, avgUnitCost: 26.5, batchCount: 1 },
-  '3': { totalQuantity: 80, totalValue: 4800, avgUnitCost: 60, batchCount: 3 },
-  '4': { totalQuantity: 25, totalValue: 2250, avgUnitCost: 90, batchCount: 1 }
-};
+interface InventoryInfo {
+  totalQuantity: number;
+  totalValue: number;
+  avgUnitCost: number;
+  batchCount: number;
+}
 
 export function InventoryAdjustmentForm({ productId, defaultType }: InventoryAdjustmentFormProps) {
   const router = useRouter();
+  const { getToken, isSignedIn } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [currentInventory, setCurrentInventory] = useState<InventoryInfo | null>(null);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingInventory, setLoadingInventory] = useState(false);
 
   const form = useForm<InventoryAdjustmentFormData>({
     resolver: zodResolver(adjustmentSchema),
@@ -69,7 +71,7 @@ export function InventoryAdjustmentForm({ productId, defaultType }: InventoryAdj
       productId: productId || '',
       adjustmentType: defaultType || 'increase',
       quantity: 1,
-      unitCost: undefined,
+      unitCost: 0,
       reason: '',
       remark: ''
     }
@@ -77,7 +79,91 @@ export function InventoryAdjustmentForm({ productId, defaultType }: InventoryAdj
 
   const watchedProductId = form.watch('productId');
   const watchedAdjustmentType = form.watch('adjustmentType');
-  const currentInventory = watchedProductId ? mockInventory[watchedProductId] : null;
+
+  // 加载产品列表
+  const loadProducts = useCallback(async () => {
+    if (!isSignedIn) return;
+
+    try {
+      setLoadingProducts(true);
+      const clientApi = createClientApi(getToken);
+      const response = await clientApi.products.getProducts({
+        pageSize: 100, // 获取所有产品
+      });
+
+      if (response.success && response.data) {
+        const data = response.data as any;
+        const productList = (data.products || []).map((product: any) => ({
+          id: product.id,
+          sku: product.sku,
+          name: product.name
+        }));
+        setProducts(productList);
+      } else {
+        toast.error('获取产品列表失败');
+      }
+    } catch (error) {
+      console.error('加载产品失败:', error);
+      toast.error('获取产品列表失败');
+    } finally {
+      setLoadingProducts(false);
+    }
+  }, [getToken, isSignedIn]);
+
+  // 加载库存信息
+  const loadInventoryInfo = useCallback(async (productId: string) => {
+    if (!isSignedIn || !productId) return;
+
+    try {
+      setLoadingInventory(true);
+      const clientApi = createClientApi(getToken);
+      const response = await clientApi.inventory.getInventoryOverview({
+        limit: 1,
+        search: productId, // 使用产品ID搜索
+      });
+
+      if (response.success && response.data) {
+        const data = response.data as any;
+        const inventoryItems = data.data || [];
+        
+        if (inventoryItems.length > 0) {
+          const item = inventoryItems[0];
+          setCurrentInventory({
+            totalQuantity: Number(item.quantity || 0),
+            totalValue: Number(item.total_cost || 0),
+            avgUnitCost: Number(item.unit_cost || 0),
+            batchCount: Number(item.batch_count || 0)
+          });
+        } else {
+          setCurrentInventory({
+            totalQuantity: 0,
+            totalValue: 0,
+            avgUnitCost: 0,
+            batchCount: 0
+          });
+        }
+      }
+    } catch (error) {
+      console.error('加载库存信息失败:', error);
+      setCurrentInventory(null);
+    } finally {
+      setLoadingInventory(false);
+    }
+  }, [getToken, isSignedIn]);
+
+  // 初始化加载产品列表
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  // 当选择的产品改变时，加载库存信息
+  useEffect(() => {
+    if (watchedProductId) {
+      loadInventoryInfo(watchedProductId);
+    } else {
+      setCurrentInventory(null);
+    }
+  }, [watchedProductId, loadInventoryInfo]);
 
   const onSubmit = async (data: InventoryAdjustmentFormData) => {
     setLoading(true);
@@ -92,18 +178,31 @@ export function InventoryAdjustmentForm({ productId, defaultType }: InventoryAdj
       }
 
       // 增加库存时必须提供单位成本
-      if (data.adjustmentType === 'increase' && !data.unitCost) {
+      if (data.adjustmentType === 'increase' && (!data.unitCost || data.unitCost <= 0)) {
         toast.error('增加库存时必须提供单位成本');
         setLoading(false);
         return;
       }
 
-      // 模拟调整API调用
-      console.log('库存调整数据:', data);
-      
-      toast.success('库存调整成功');
-      router.push('/dashboard/inventory');
+      // 调用真实API
+      const clientApi = createClientApi(getToken);
+      const response = await clientApi.inventory.createAdjustment({
+        product_id: data.productId,
+        type: data.adjustmentType,
+        quantity: data.quantity,
+        unit_cost: data.unitCost,
+        reason: data.reason,
+        remark: data.remark
+      });
+
+      if (response.success) {
+        toast.success('库存调整成功');
+        router.push('/dashboard/inventory/movement');
+      } else {
+        toast.error(response.error?.message || '库存调整失败');
+      }
     } catch (error) {
+      console.error('库存调整失败:', error);
       toast.error('库存调整失败');
     } finally {
       setLoading(false);
@@ -111,7 +210,7 @@ export function InventoryAdjustmentForm({ productId, defaultType }: InventoryAdj
   };
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-6 min-h-0'>
       <Card>
         <CardHeader>
           <CardTitle>库存调整</CardTitle>
@@ -136,16 +235,26 @@ export function InventoryAdjustmentForm({ productId, defaultType }: InventoryAdj
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {mockProducts.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            <div className='flex items-center gap-2'>
-                              <Badge variant='outline' className='font-mono text-xs'>
-                                {product.sku}
-                              </Badge>
-                              <span>{product.name}</span>
-                            </div>
+                        {loadingProducts ? (
+                          <SelectItem value="loading" disabled>
+                            加载产品中...
                           </SelectItem>
-                        ))}
+                        ) : products.length === 0 ? (
+                          <SelectItem value="empty" disabled>
+                            暂无产品数据
+                          </SelectItem>
+                        ) : (
+                          products.map((product: Product) => (
+                            <SelectItem key={product.id} value={product.id}>
+                              <div className='flex items-center gap-2'>
+                                <Badge variant='outline' className='font-mono text-xs'>
+                                  {product.sku}
+                                </Badge>
+                                <span>{product.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -154,35 +263,45 @@ export function InventoryAdjustmentForm({ productId, defaultType }: InventoryAdj
               />
 
               {/* 当前库存信息 */}
-              {currentInventory && (
+              {watchedProductId && (
                 <Card className='bg-muted/50'>
                   <CardContent className='pt-6'>
-                    <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-                      <div>
-                        <div className='text-sm text-muted-foreground'>当前库存</div>
-                        <div className='text-lg font-semibold'>
-                          {currentInventory.totalQuantity.toLocaleString()}
+                    {loadingInventory ? (
+                      <div className='text-center py-4'>
+                        <div className='text-sm text-muted-foreground'>加载库存信息中...</div>
+                      </div>
+                    ) : currentInventory ? (
+                      <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+                        <div>
+                          <div className='text-sm text-muted-foreground'>当前库存</div>
+                          <div className='text-lg font-semibold'>
+                            {currentInventory.totalQuantity.toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <div className='text-sm text-muted-foreground'>库存价值</div>
+                          <div className='text-lg font-semibold'>
+                            ¥{currentInventory.totalValue.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                        <div>
+                          <div className='text-sm text-muted-foreground'>平均成本</div>
+                          <div className='text-lg font-semibold'>
+                            ¥{currentInventory.avgUnitCost.toFixed(2)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className='text-sm text-muted-foreground'>批次数量</div>
+                          <div className='text-lg font-semibold'>
+                            {currentInventory.batchCount}
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <div className='text-sm text-muted-foreground'>库存价值</div>
-                        <div className='text-lg font-semibold'>
-                          ¥{currentInventory.totalValue.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
-                        </div>
+                    ) : (
+                      <div className='text-center py-4'>
+                        <div className='text-sm text-muted-foreground'>暂无库存信息</div>
                       </div>
-                      <div>
-                        <div className='text-sm text-muted-foreground'>平均成本</div>
-                        <div className='text-lg font-semibold'>
-                          ¥{currentInventory.avgUnitCost.toFixed(2)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className='text-sm text-muted-foreground'>批次数量</div>
-                        <div className='text-lg font-semibold'>
-                          {currentInventory.batchCount}
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -256,8 +375,8 @@ export function InventoryAdjustmentForm({ productId, defaultType }: InventoryAdj
                           min={INVENTORY_VALIDATION.UNIT_COST_MIN}
                           max={INVENTORY_VALIDATION.UNIT_COST_MAX}
                           placeholder={currentInventory ? `参考成本: ¥${currentInventory.avgUnitCost.toFixed(2)}` : '请输入单位成本'}
-                          {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(Number(e.target.value) || 0)}
                         />
                       </FormControl>
                       <FormMessage />
@@ -313,10 +432,10 @@ export function InventoryAdjustmentForm({ productId, defaultType }: InventoryAdj
 
               {/* 调整预览 */}
               {watchedProductId && currentInventory && (
-                <Card className='bg-blue-50 border-blue-200'>
-                  <CardContent className='pt-6'>
-                    <div className='text-sm font-medium text-blue-900 mb-2'>调整预览</div>
-                    <div className='grid grid-cols-3 gap-4 text-sm'>
+                <Card className='border-blue-200'>
+                  <CardContent className=''>
+              
+                    <div className='grid grid-cols-3 gap-4 text-sm text-blue-700'>
                       <div>
                         <div className='text-blue-700'>调整前数量</div>
                         <div className='font-semibold'>{currentInventory.totalQuantity.toLocaleString()}</div>

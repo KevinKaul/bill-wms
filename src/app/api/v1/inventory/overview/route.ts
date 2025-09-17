@@ -8,6 +8,17 @@ export async function GET(request: NextRequest) {
     // 验证用户身份
     await requireAuth(request);
 
+    // 解析查询参数
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search');
+    const productType = searchParams.get('productType');
+    const lowStock = searchParams.get('lowStock') === 'true';
+    const hasStock = searchParams.get('hasStock') === 'true';
+
+    console.log('库存概览API参数:', { page, limit, search, productType, lowStock, hasStock });
+
     // 查询总产品数量
     const totalProducts = await prisma.product.count({
       where: {
@@ -122,15 +133,123 @@ export async function GET(request: NextRequest) {
       })),
     ];
 
+    // 查询库存明细数据
+    const offset = (page - 1) * limit;
+    
+    // 构建产品筛选条件
+    const productWhere: any = {
+      status: "active",
+    };
+
+    if (search) {
+      productWhere.OR = [
+        { sku: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    if (productType && productType !== 'all') {
+      if (productType === 'raw_material') {
+        productWhere.type = 'RAW_MATERIAL';
+      } else if (productType === 'finished_product') {
+        productWhere.type = 'FINISHED_PRODUCT';
+      }
+    }
+
+    // 查询产品及其库存信息
+    const products = await prisma.product.findMany({
+      where: productWhere,
+      include: {
+        rawMaterialBatches: {
+          where: {
+            remainingQuantity: { gt: 0 }
+          },
+          select: {
+            remainingQuantity: true,
+            actualUnitPrice: true,
+            inboundDate: true
+          }
+        },
+        finishedProductBatches: {
+          where: {
+            remainingQuantity: { gt: 0 }
+          },
+          select: {
+            remainingQuantity: true,
+            actualUnitCost: true,
+            inboundDate: true
+          }
+        }
+      },
+      skip: offset,
+      take: limit,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // 计算总数（用于分页）
+    const totalProductsForPagination = await prisma.product.count({
+      where: productWhere
+    });
+
+    // 转换为库存明细格式
+    const inventoryData = products.map(product => {
+      let totalQuantity = 0;
+      let totalValue = 0;
+      let batchCount = 0;
+      let oldestBatchDate = new Date();
+      let avgUnitCost = 0;
+
+      if (product.type === 'RAW_MATERIAL') {
+        const batches = product.rawMaterialBatches;
+        totalQuantity = batches.reduce((sum, batch) => sum + Number(batch.remainingQuantity), 0);
+        totalValue = batches.reduce((sum, batch) => sum + Number(batch.remainingQuantity) * Number(batch.actualUnitPrice), 0);
+        batchCount = batches.length;
+        if (batches.length > 0) {
+          oldestBatchDate = new Date(Math.min(...batches.map(b => new Date(b.inboundDate).getTime())));
+          avgUnitCost = totalQuantity > 0 ? totalValue / totalQuantity : 0;
+        }
+      } else if (product.type === 'FINISHED_PRODUCT') {
+        const batches = product.finishedProductBatches;
+        totalQuantity = batches.reduce((sum, batch) => sum + Number(batch.remainingQuantity), 0);
+        totalValue = batches.reduce((sum, batch) => sum + Number(batch.remainingQuantity) * Number(batch.actualUnitCost), 0);
+        batchCount = batches.length;
+        if (batches.length > 0) {
+          oldestBatchDate = new Date(Math.min(...batches.map(b => new Date(b.inboundDate).getTime())));
+          avgUnitCost = totalQuantity > 0 ? totalValue / totalQuantity : 0;
+        }
+      }
+
+      return {
+        product_id: product.id,
+        product_sku: product.sku,
+        product_name: product.name,
+        product_type: product.type.toLowerCase(),
+        total_quantity: totalQuantity,
+        total_value: totalValue,
+        batch_count: batchCount,
+        avg_unit_cost: avgUnitCost,
+        oldest_batch_date: oldestBatchDate.toISOString(),
+        low_stock_alert: false // TODO: 实现库存阈值功能
+      };
+    });
+
+    console.log(`查询到 ${inventoryData.length} 条库存记录，总计 ${totalProductsForPagination} 条`);
+
     // 返回响应
     return NextResponse.json({
       success: true,
       data: {
+        // 统计数据
         total_products: totalProducts,
         total_batches: totalBatches,
         total_value: totalValue,
         low_stock_alerts: lowStockAlerts,
         categories,
+        // 库存明细数据
+        data: inventoryData,
+        total: totalProductsForPagination,
+        page,
+        limit
       },
     });
   } catch (error) {

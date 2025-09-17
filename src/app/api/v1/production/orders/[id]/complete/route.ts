@@ -10,16 +10,21 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('=== 开始完成生产操作 ===');
+    
     // 验证用户身份
     await requireAuth(request);
 
     // 验证参数
     const { id } = await params;
     const validatedParams = validateRequest(idParamSchema, { id });
+    console.log('加工单ID:', validatedParams.id);
 
     // 解析请求体
     const requestData = await request.json();
+    console.log('请求数据:', requestData);
     const validatedData = validateRequest(completeProductionSchema, requestData);
+    console.log('验证后的数据:', validatedData);
 
     // 开始事务
     const result = await prisma.$transaction(async (tx: any) => {
@@ -46,6 +51,15 @@ export async function PATCH(
         throw new Error("加工单不存在");
       }
 
+      console.log('找到加工单:', {
+        id: existingOrder.id,
+        orderNumber: existingOrder.orderNumber,
+        status: existingOrder.status,
+        productId: existingOrder.productId,
+        productSku: existingOrder.product.sku,
+        totalCost: existingOrder.totalCost
+      });
+
       // 检查状态是否允许完成生产
       if (existingOrder.status !== "IN_PROGRESS") {
         throw new Error(`当前状态为 ${existingOrder.status}，不能完成生产`);
@@ -53,6 +67,11 @@ export async function PATCH(
 
       // 计算实际单位成本
       const actualUnitCost = Number(existingOrder.totalCost) / validatedData.actual_quantity;
+      console.log('计算单位成本:', {
+        totalCost: existingOrder.totalCost,
+        actualQuantity: validatedData.actual_quantity,
+        actualUnitCost
+      });
 
       // 更新加工单状态
       const updatedOrder = await tx.processOrder.update({
@@ -82,11 +101,14 @@ export async function PATCH(
         },
       });
 
+      console.log('加工单状态已更新为COMPLETED');
+
       // 生成成品批次号
       const batchNumber = await generateFinishedProductBatchNumber(
         existingOrder.productId,
         tx
       );
+      console.log('生成批次号:', batchNumber);
 
       // 创建成品库存批次
       const finishedBatch = await tx.finishedProductBatch.create({
@@ -101,7 +123,22 @@ export async function PATCH(
         },
       });
 
+      console.log('成品批次已创建:', {
+        id: finishedBatch.id,
+        batchNumber: finishedBatch.batchNumber,
+        productId: finishedBatch.productId,
+        inboundQuantity: finishedBatch.inboundQuantity,
+        actualUnitCost: finishedBatch.actualUnitCost
+      });
+
       return { updatedOrder, finishedBatch };
+    });
+
+    console.log('=== 生产完成操作成功 ===');
+    console.log('返回数据:', {
+      orderId: result.updatedOrder.id,
+      batchId: result.finishedBatch.id,
+      batchNumber: result.finishedBatch.batchNumber
     });
 
     // 返回响应

@@ -27,7 +27,7 @@ export default async function Page({ params }: PageProps) {
   return (
     <PageContainer scrollable={true}>
       <div className='flex flex-1 flex-col space-y-4'>
-        <Breadcrumbs />
+      
         <SupplierForm 
           initialData={{
             id: supplier.id,

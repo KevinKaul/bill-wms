@@ -78,7 +78,7 @@ export function CellAction({ data }: CellActionProps) {
       }
 
       toast.success('加工单已确认');
-      router.refresh();
+      onRefresh?.();
     } catch (error) {
       console.error('确认失败:', error);
       toast.error(error instanceof Error ? error.message : '确认失败');
@@ -114,7 +114,7 @@ export function CellAction({ data }: CellActionProps) {
       }
 
       toast.success('生产已开始');
-      router.refresh();
+      onRefresh?.();
     } catch (error) {
       console.error('开始生产失败:', error);
       toast.error(error instanceof Error ? error.message : '开始生产失败');
@@ -156,7 +156,7 @@ export function CellAction({ data }: CellActionProps) {
       }
 
       toast.success('生产已完成');
-      router.refresh();
+      onRefresh?.();
     } catch (error) {
       console.error('完成生产失败:', error);
       toast.error(error instanceof Error ? error.message : '完成生产失败');
@@ -193,9 +193,7 @@ export function CellAction({ data }: CellActionProps) {
 
       toast.success('已标记为已付款');
       // 刷新表格数据
-      if (onRefresh) {
-        onRefresh();
-      }
+      onRefresh?.();
     } catch (error) {
       console.error('更新付款状态失败:', error);
       toast.error(error instanceof Error ? error.message : '更新付款状态失败');
@@ -216,8 +214,8 @@ export function CellAction({ data }: CellActionProps) {
       
       if (response.success) {
         toast.success('加工单已删除');
-        // 刷新页面来移除已删除的行
-        router.refresh();
+        // 刷新表格来移除已删除的行
+        onRefresh?.();
       } else {
         toast.error(response.error?.message || '删除失败');
       }

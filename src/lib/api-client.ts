@@ -670,5 +670,40 @@ export function createClientApi(getToken: () => Promise<string | null>) {
         return clientApiRequest(url, "GET", undefined, getToken);
       },
     },
+
+    // 生产模块API
+    production: {
+      getOrders: async (params: {
+        page?: number;
+        per_page?: number;
+        search?: string;
+        product_id?: string;
+        supplier_id?: string;
+        status?: string;
+        payment_status?: string;
+        date_from?: string;
+        date_to?: string;
+        sort?: string;
+        order?: 'asc' | 'desc';
+      }) => {
+        const queryParams = new URLSearchParams();
+
+        if (params.page) queryParams.append("page", params.page.toString());
+        if (params.per_page) queryParams.append("per_page", params.per_page.toString());
+        if (params.search) queryParams.append("search", params.search);
+        if (params.product_id) queryParams.append("product_id", params.product_id);
+        if (params.supplier_id) queryParams.append("supplier_id", params.supplier_id);
+        if (params.status) queryParams.append("status", params.status.toUpperCase());
+        if (params.payment_status) queryParams.append("payment_status", params.payment_status.toUpperCase());
+        if (params.date_from) queryParams.append("date_from", params.date_from);
+        if (params.date_to) queryParams.append("date_to", params.date_to);
+        if (params.sort) queryParams.append("sort", params.sort);
+        if (params.order) queryParams.append("order", params.order);
+
+        const url = `/api/v1/production/orders?${queryParams.toString()}`;
+        return clientApiRequest(url, "GET", undefined, getToken);
+      },
+    },
   };
 }
+

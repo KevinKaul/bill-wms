@@ -165,7 +165,9 @@ export async function GET(request: NextRequest) {
     });
 
     // 构建查询条件
-    const where: any = {};
+    const where: any = {
+      deletedAt: null, // 排除已删除的记录
+    };
     if (validatedParams.search) {
       where.OR = [
         { sku: { contains: validatedParams.search, mode: "insensitive" } },

@@ -400,9 +400,10 @@ export async function DELETE(
         });
       }
 
-      // 删除加工单
-      await tx.processOrder.delete({
+      // 软删除加工单
+      await prisma.processOrder.update({
         where: { id: validatedParams.id },
+        data: { deletedAt: new Date() },
       });
     });
 

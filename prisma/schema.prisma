@@ -70,6 +70,7 @@ model Product {
   
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
+  deletedAt        DateTime?   // 软删除时间戳
   
   @@map("products")
 }
@@ -86,6 +87,7 @@ model BOMItem {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime? // 软删除时间戳
   
   @@unique([productId, componentId])
   @@map("bom_items")
@@ -109,6 +111,7 @@ model Supplier {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime? // 软删除时间戳
   
   @@map("suppliers")
 }
@@ -131,6 +134,7 @@ model PurchasePlan {
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // 软删除时间戳
   
   @@map("purchase_plans")
 }
@@ -150,6 +154,7 @@ model PurchasePlanItem {
   
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?   // 软删除时间戳
   
   @@map("purchase_plan_items")
 }
@@ -175,6 +180,7 @@ model PurchaseOrder {
   
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?     // 软删除时间戳
   
   @@map("purchase_orders")
 }
@@ -193,6 +199,7 @@ model PurchaseOrderItem {
   
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?     // 软删除时间戳
   
   @@map("purchase_order_items")
 }
@@ -223,6 +230,7 @@ model ProcessOrder {
   
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?        // 软删除时间戳
   
   @@map("process_orders")
 }
@@ -240,6 +248,7 @@ model MaterialUsage {
   rawMaterialBatch     RawMaterialBatch   @relation(fields: [rawMaterialBatchId], references: [id])
   
   createdAt            DateTime           @default(now())
+  deletedAt            DateTime?          // 软删除时间戳
   
   @@map("material_usages")
 }
@@ -261,6 +270,7 @@ model RawMaterialBatch {
   
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?       // 软删除时间戳
   
   @@map("raw_material_batches")
 }
@@ -281,6 +291,7 @@ model FinishedProductBatch {
   
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
+  deletedAt         DateTime?    // 软删除时间戳
   
   @@map("finished_product_batches")
 }
@@ -307,6 +318,7 @@ model Location {
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // 软删除时间戳
   
   @@map("locations")
 }
@@ -327,6 +339,7 @@ model InventoryAdjustment {
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime? // 软删除时间戳
   
   @@map("inventory_adjustments")
 }
@@ -348,6 +361,7 @@ model InventoryLevel {
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // 软删除时间戳
   
   @@unique([productId, locationId, batchId])
   @@map("inventory_levels")
@@ -372,6 +386,7 @@ model InventoryMovement {
   toLocation      Location? @relation("ToLocation", fields: [toLocationId], references: [id])
   
   createdAt       DateTime  @default(now())
+  deletedAt       DateTime? // 软删除时间戳
   
   @@map("inventory_movements")
 }
@@ -390,6 +405,7 @@ model OperationLog {
   description   String        // 操作描述
   
   createdAt     DateTime      @default(now())
+  deletedAt     DateTime?     // 软删除时间戳
   
   @@map("operation_logs")
 }

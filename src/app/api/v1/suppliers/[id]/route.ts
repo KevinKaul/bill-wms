@@ -340,9 +340,10 @@ export async function DELETE(
       );
     }
 
-    // 删除供应商
-    await prisma.supplier.delete({
+    // 软删除供应商
+    await prisma.supplier.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
 
     // 返回响应

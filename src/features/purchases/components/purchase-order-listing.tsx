@@ -15,6 +15,12 @@ export default function PurchaseOrderListingPage({}: PurchaseOrderListingPagePro
   const [totalData, setTotalData] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // 删除采购单的回调函数
+  const handleDeletePurchaseOrder = (orderId: string) => {
+    setData(prevData => prevData.filter(order => order.id !== orderId));
+    setTotalData(prevTotal => prevTotal - 1);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -80,6 +86,10 @@ export default function PurchaseOrderListingPage({}: PurchaseOrderListingPagePro
   }
 
   return (
-    <PurchaseOrderTable data={data} totalData={totalData} />
+    <PurchaseOrderTable 
+      data={data} 
+      totalData={totalData} 
+      onDeletePurchaseOrder={handleDeletePurchaseOrder}
+    />
   );
 }

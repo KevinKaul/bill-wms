@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
         remark: result.order.remark,
         created_at: result.order.createdAt.toISOString(),
         updated_at: result.order.updatedAt.toISOString(),
-        items: result.items.map((item) => ({
+        items: result.items.map((item:any) => ({
           id: item.id,
           product_id: item.productId,
           product_sku: item.product.sku,
@@ -210,7 +210,9 @@ export async function GET(request: NextRequest) {
     });
 
     // 构建查询条件
-    const where: any = {};
+    const where: any = {
+      deletedAt: null, // 排除已删除的记录
+    };
 
     if (validatedParams.search) {
       where.OR = [

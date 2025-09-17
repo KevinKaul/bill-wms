@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { PurchasePlanTableItem } from '@/types/purchase';
+import { deleteApi } from "@/lib/delete-api";
+import { useAuth } from '@clerk/nextjs';
 
 interface CellActionProps {
   data: PurchasePlanTableItem;
@@ -25,15 +27,23 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { getToken } = useAuth();
 
   const onConfirm = async () => {
     try {
       setLoading(true);
-      // TODO: 实现删除采购计划逻辑
-      toast.success('采购计划已删除');
-      setOpen(false);
-      // 刷新页面或更新数据
+      const response = await deleteApi.deletePurchasePlan(data.id, getToken);
+      
+      if (response.success) {
+        toast.success('采购计划已删除');
+        setOpen(false);
+        // 刷新页面来移除已删除的行
+        router.refresh();
+      } else {
+        toast.error(response.error?.message || '删除失败');
+      }
     } catch (error) {
+      console.error('删除采购计划错误:', error);
       toast.error('删除失败，请重试');
     } finally {
       setLoading(false);

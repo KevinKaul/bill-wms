@@ -364,9 +364,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 删除产品
-    await prisma.product.delete({
+    // 软删除产品
+    await prisma.product.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
 
     // 返回响应

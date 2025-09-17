@@ -25,6 +25,8 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ProductionOrderTableItem } from '@/types/production';
+import { deleteApi } from "@/lib/delete-api";
+import { useAuth } from '@clerk/nextjs';
 
 interface CellActionProps {
   data: ProductionOrderTableItem;
@@ -33,6 +35,7 @@ interface CellActionProps {
 export function CellAction({ data }: CellActionProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { getToken } = useAuth();
 
   const onCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -205,28 +208,18 @@ export function CellAction({ data }: CellActionProps) {
 
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/production/orders/${data.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await deleteApi.deleteProductionOrder(data.id, getToken);
+      
+      if (response.success) {
+        toast.success('加工单已删除');
+        // 刷新页面来移除已删除的行
+        router.refresh();
+      } else {
+        toast.error(response.error?.message || '删除失败');
       }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error?.message || '取消失败');
-      }
-
-      toast.success('加工单已取消');
-      router.refresh();
     } catch (error) {
-      console.error('取消失败:', error);
-      toast.error(error instanceof Error ? error.message : '取消失败');
+      console.error('删除加工单错误:', error);
+      toast.error('删除失败，请重试');
     } finally {
       setLoading(false);
     }

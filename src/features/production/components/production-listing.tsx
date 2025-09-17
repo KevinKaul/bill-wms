@@ -1,123 +1,138 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { ProductionOrderTableItem, ProductionOrderFilters } from '@/types/production';
+import { ProductionOrderTableItem } from '@/types/production';
+import { createClientApi } from '@/lib/client-api';
 import { ProductionTable } from './production-tables';
+import { useAuth } from '@clerk/nextjs';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
-export default function ProductionListingPage() {
+type ProductionListingPageProps = {};
+
+export default function ProductionListingPage({}: ProductionListingPageProps) {
+  const { getToken, isSignedIn } = useAuth();
   const searchParams = useSearchParams();
-  const [data, setData] = useState<ProductionOrderTableItem[]>([]);
-  const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
-
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      
-      const page = parseInt(searchParams.get('page') || '1');
-      const per_page = parseInt(searchParams.get('limit') || '10');
-      const search = searchParams.get('search') || undefined;
-      const product_id = searchParams.get('productId') || undefined;
-      const supplier_id = searchParams.get('supplierId') || undefined;
-      const status = searchParams.get('status') || undefined;
-      const payment_status = searchParams.get('paymentStatus') || undefined;
-      const date_from = searchParams.get('dateFrom') || undefined;
-      const date_to = searchParams.get('dateTo') || undefined;
-      const sort = searchParams.get('sortBy') || 'createdAt';
-      const order = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
-
-      // 构建查询参数
-      const queryParams = new URLSearchParams();
-      queryParams.append('page', page.toString());
-      queryParams.append('per_page', per_page.toString());
-      if (search) queryParams.append('search', search);
-      if (product_id) queryParams.append('product_id', product_id);
-      if (supplier_id) queryParams.append('supplier_id', supplier_id);
-      if (status) queryParams.append('status', status.toUpperCase());
-      if (payment_status) queryParams.append('payment_status', payment_status.toUpperCase());
-      if (date_from) queryParams.append('date_from', date_from);
-      if (date_to) queryParams.append('date_to', date_to);
-      queryParams.append('sort', sort);
-      queryParams.append('order', order);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/production/orders?${queryParams.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error?.message || '获取加工单列表失败');
-      }
-
-      // 转换数据格式以匹配前端类型
-      const orders: ProductionOrderTableItem[] = result.data.orders.map((order: any) => ({
-        id: order.id,
-        orderNumber: order.order_number,
-        productInfo: {
-          sku: order.product_sku,
-          name: order.product_name,
-        },
-        plannedQuantity: order.planned_quantity,
-        actualQuantity: order.actual_quantity,
-        materialCost: order.material_cost,
-        processingFee: order.processing_fee,
-        totalCost: order.total_cost,
-        supplierName: order.supplier_name,
-        status: order.status,
-        paymentStatus: order.payment_status,
-        orderDate: order.order_date,
-        startDate: order.start_date,
-        completionDate: order.completion_date,
-        qualityStatus: order.quality_status,
-        remark: order.remark,
-        createdAt: order.created_at,
-        updatedAt: order.updated_at,
-      }));
-
-      setData(orders);
-      setTotalItems(result.data.total);
-    } catch (error) {
-      console.error('获取加工单列表失败:', error);
-      setData([]);
-      setTotalItems(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchParams]);
+  const [orders, setOrders] = useState<ProductionOrderTableItem[]>([]);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [searchParams, fetchData]);
+    const fetchOrders = async () => {
+      if (!isSignedIn) return;
 
-  const handleFiltersChange = (filters: ProductionOrderFilters) => {
-    // 这里可以处理筛选器变化，更新URL参数
-    console.log('筛选器变化:', filters);
-  };
+      try {
+        setLoading(true);
+        setError(null);
+
+        // 从URL搜索参数获取过滤条件
+        const page = parseInt(searchParams.get('page') || '1');
+        const per_page = parseInt(searchParams.get('per_page') || '10');
+        const search = searchParams.get('search') || undefined;
+        const productId = searchParams.get('productId') || undefined;
+        const supplierId = searchParams.get('supplierId') || undefined;
+        const status = searchParams.get('status') || undefined;
+        const paymentStatus = searchParams.get('paymentStatus') || undefined;
+        const dateFrom = searchParams.get('dateFrom') || undefined;
+        const dateTo = searchParams.get('dateTo') || undefined;
+        const sortBy = searchParams.get('sortBy') || 'createdAt';
+        const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+
+        const filters = {
+          page,
+          per_page,
+          ...(search && { search }),
+          ...(productId && { product_id: productId }),
+          ...(supplierId && { supplier_id: supplierId }),
+          ...(status && { status }),
+          ...(paymentStatus && { payment_status: paymentStatus }),
+          ...(dateFrom && { date_from: dateFrom }),
+          ...(dateTo && { date_to: dateTo }),
+          sort: sortBy,
+          order: sortOrder,
+        };
+
+        console.log('搜索参数:', filters);
+
+        const clientApi = createClientApi(getToken);
+        const response = await clientApi.production.getOrders(filters);
+
+        console.log('API响应:', response.data);
+
+        if (!response.success) {
+          throw new Error(response.error?.message || '获取加工单列表失败');
+        }
+
+        const data = response.data as any || {};
+        const apiData = data.orders || [];
+        const total = data.total || 0;
+
+        // 将API返回的数据格式映射到表格组件期望的格式
+        const orderList: ProductionOrderTableItem[] = apiData.map((order: any) => ({
+          id: order.id,
+          orderNumber: order.order_number,
+          productInfo: {
+            sku: order.product_sku,
+            name: order.product_name,
+          },
+          plannedQuantity: order.planned_quantity,
+          actualQuantity: order.actual_quantity,
+          materialCost: order.material_cost,
+          processingFee: order.processing_fee,
+          totalCost: order.total_cost,
+          supplierName: order.supplier_name,
+          status: order.status,
+          paymentStatus: order.payment_status,
+          orderDate: order.order_date,
+          startDate: order.start_date,
+          completionDate: order.completion_date,
+          qualityStatus: order.quality_status,
+          remark: order.remark,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at,
+        }));
+
+        setOrders(orderList);
+        setTotalOrders(total);
+      } catch (err) {
+        console.error('获取加工单列表失败:', err);
+        setError(err instanceof Error ? err.message : '获取加工单列表失败');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [isSignedIn, getToken, searchParams]);
+
+  if (loading) {
+    return <div className="p-4">加载中...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500">错误: {error}</div>;
+  }
+
+  if (!isSignedIn) {
+    return <div className="p-4">请先登录</div>;
+  }
+
+  // 如果没有数据，显示空状态而不是表格
+  if (orders.length === 0 && !loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="text-muted-foreground">
+          <h3 className="text-lg font-medium">暂无加工单数据</h3>
+          <p className="mt-2 text-sm">点击&quot;新增加工单&quot;按钮创建第一个加工单</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {loading ? (
-        <div className='flex items-center justify-center h-32'>
-          <div className='text-sm text-muted-foreground'>加载中...</div>
-        </div>
-      ) : (
-        <ProductionTable
-          data={data}
-          totalItems={totalItems}
-          onFiltersChange={handleFiltersChange}
-        />
-      )}
-    </>
+    <ProductionTable
+      data={orders}
+      totalItems={totalOrders}
+    />
   );
 }

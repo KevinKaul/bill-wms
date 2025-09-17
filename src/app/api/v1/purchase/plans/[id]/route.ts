@@ -399,9 +399,10 @@ export async function DELETE(
       );
     }
 
-    // 删除采购计划（级联删除items）
-    await prisma.purchasePlan.delete({
+    // 软删除采购计划
+    await prisma.purchasePlan.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
 
     // 返回响应

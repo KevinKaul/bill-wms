@@ -454,9 +454,10 @@ export async function DELETE(
       );
     }
 
-    // 删除采购单（级联删除items）
-    await prisma.purchaseOrder.delete({
+    // 软删除采购单
+    await prisma.purchaseOrder.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
 
     // 返回响应

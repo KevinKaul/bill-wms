@@ -74,6 +74,73 @@ async function processInboundInventory(tx: any, order: any) {
         totalCost: actualTotalCost,
       }
     });
+
+    // 更新库存水平表 - 关键修复
+    console.log(`[入库处理] 更新库存水平表，产品：${item.product.sku}，数量：${item.quantity}`);
+    
+    // 获取默认位置ID（如果没有位置系统，使用一个默认位置）
+    let defaultLocation = await tx.location.findFirst({
+      where: { code: 'DEFAULT' }
+    });
+    
+    if (!defaultLocation) {
+      // 创建默认位置
+      defaultLocation = await tx.location.create({
+        data: {
+          code: 'DEFAULT',
+          name: '默认仓库',
+          type: 'warehouse',
+          status: 'active'
+        }
+      });
+      console.log(`[入库处理] 创建默认仓库位置: ${defaultLocation.id}`);
+    }
+
+    // 查找是否已存在该产品在该位置的库存记录
+    const existingInventoryLevel = await tx.inventoryLevel.findUnique({
+      where: {
+        productId_locationId_batchId: {
+          productId: item.productId,
+          locationId: defaultLocation.id,
+          batchId: batchNumber
+        }
+      }
+    });
+
+    if (existingInventoryLevel) {
+      // 更新现有库存记录
+      await tx.inventoryLevel.update({
+        where: {
+          productId_locationId_batchId: {
+            productId: item.productId,
+            locationId: defaultLocation.id,
+            batchId: batchNumber
+          }
+        },
+        data: {
+          quantity: { increment: item.quantity },
+          availableQuantity: { increment: item.quantity },
+          unitCost: actualUnitPrice,
+          totalCost: { increment: actualTotalCost }
+        }
+      });
+    } else {
+      // 创建新的库存记录
+      await tx.inventoryLevel.create({
+        data: {
+          productId: item.productId,
+          locationId: defaultLocation.id,
+          batchId: batchNumber,
+          quantity: item.quantity,
+          reservedQuantity: 0,
+          availableQuantity: item.quantity,
+          unitCost: actualUnitPrice,
+          totalCost: actualTotalCost
+        }
+      });
+    }
+    
+    console.log(`[入库处理] 库存水平表更新完成，产品：${item.product.sku}，批次：${batchNumber}`);
   }
 }
 

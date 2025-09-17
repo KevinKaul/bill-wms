@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { SupplierTableItem } from '@/types/supplier';
-import { createClientApi } from '@/lib/client-api';
+import { deleteApi } from "@/lib/delete-api";
 import { useAuth } from '@clerk/nextjs';
 
 interface CellActionProps {
@@ -28,17 +28,16 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const { getToken } = useAuth();
-  const clientApi = createClientApi(getToken);
 
   const onConfirm = async () => {
     try {
       setLoading(true);
-      const response = await clientApi.suppliers.deleteSupplier(data.id);
+      const response = await deleteApi.deleteSupplier(data.id, getToken);
       
       if (response.success) {
         toast.success('供应商已删除');
         setOpen(false);
-        // 刷新页面
+        // 刷新页面来移除已删除的行
         router.refresh();
       } else {
         toast.error(response.error?.message || '删除失败');

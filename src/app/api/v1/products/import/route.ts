@@ -1,6 +1,10 @@
 import { auth } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { uploadFile } from '@/storage';
+import { getImageMimeType, getImageExtension } from '@/lib/excel-image-extractor';
 
 interface ImportError {
   row: number;
@@ -45,6 +49,57 @@ function parseCSV(content: string): string[][] {
   return rows;
 }
 
+// 从Excel文件中提取图片（使用ExcelJS）
+async function extractImagesFromExcelJS(file: File): Promise<Map<number, Buffer>> {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(Buffer.from(arrayBuffer) as any);
+
+    const imageMap = new Map<number, Buffer>();
+
+    // 获取第一个工作表
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) return imageMap;
+
+    // 从workbook.media中提取图片
+    const media = (workbook as any).media;
+    if (media && media.length > 0) {
+      media.forEach((mediaItem: any, index: number) => {
+        if (mediaItem && mediaItem.buffer) {
+          imageMap.set(index, mediaItem.buffer);
+        }
+      });
+    }
+
+    return imageMap;
+  } catch (error) {
+    console.error('Failed to extract images with ExcelJS:', error);
+    return new Map();
+  }
+}
+
+// 上传图片到存储服务
+async function uploadProductImage(imageBuffer: Buffer, sku: string): Promise<string | null> {
+  try {
+    const mimeType = getImageMimeType(imageBuffer);
+    const extension = getImageExtension(mimeType);
+    const fileName = `${sku}-${Date.now()}.${extension}`;
+    
+    const result = await uploadFile(
+      imageBuffer,
+      fileName,
+      mimeType,
+      `${process.env.NODE_ENV}/products`
+    );
+    
+    return result.url || null;
+  } catch (error) {
+    console.error('Failed to upload product image:', error);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth();
@@ -65,9 +120,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 读取文件内容
-    const content = await file.text();
-    const rows = parseCSV(content);
+    // 判断文件类型
+    const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                    file.type === 'application/vnd.ms-excel' ||
+                    file.name.endsWith('.xlsx') ||
+                    file.name.endsWith('.xls');
+
+    let rows: string[][] = [];
+    let imageMap = new Map<number, Buffer>();
+
+    if (isExcel) {
+      // 处理Excel文件 - 使用ExcelJS提取图片
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // 先用ExcelJS提取图片
+      imageMap = await extractImagesFromExcelJS(file);
+      console.log(`提取到 ${imageMap.size} 张图片`);
+
+      // 再用XLSX读取数据
+      const workbook = XLSX.read(new Uint8Array(arrayBuffer), { 
+        sheets: 0,
+        cellFormula: false,
+        cellStyles: false,
+      });
+
+      // 读取第一个工作表的数据
+      const sheetName = workbook.SheetNames[0];
+      if (sheetName) {
+        const worksheet = workbook.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        rows = data as string[][];
+      }
+    } else {
+      // 处理CSV文件
+      const content = await file.text();
+      rows = parseCSV(content);
+    }
 
     // 跳过表头行
     const dataRows = rows.slice(1);
@@ -82,41 +170,39 @@ export async function POST(request: NextRequest) {
       const row = dataRows[i];
 
       try {
-        // 提取字段
-        const sku = row[0]?.toString().trim();
-        const name = row[1]?.toString().trim();
-        const type = row[2]?.toString().trim();
-        const referencePurchasePrice = row[3] ? parseFloat(row[3]) : undefined;
-        const guidancePrice = row[4] ? parseFloat(row[4]) : undefined;
-        const description = row[5]?.toString().trim();
+        // 新的列结构：第1列=封面(图片), 第2列=SKU, 第3列=单价, 第4列=产品描述
+        // XLSX读取时会保留空列，所以实际的列索引是：
+        // row[0] = 图片列（空）
+        // row[1] = SKU
+        // row[2] = 单价
+        // row[3] = 产品描述
+        const sku = row[1]?.toString().trim();
+        const unitPrice = row[2] ? parseFloat(row[2]) : undefined;
+        const description = row[3]?.toString().trim();
 
         // 验证必填字段
-        if (!sku || !name) {
+        if (!sku) {
           errors.push({
             row: rowIndex,
-            message: 'SKU和产品名称为必填项',
+            message: 'SKU为必填项',
           });
           failedCount++;
           continue;
         }
 
-        // 验证产品类型
-        const validTypes = ['原材料', '组合产品'];
-        if (!type || !validTypes.includes(type)) {
-          errors.push({
-            row: rowIndex,
-            message: '产品类型必须为"原材料"或"组合产品"',
-          });
-          failedCount++;
-          continue;
-        }
+        // 默认所有导入的产品都是原材料
+        // 组合产品需要手动创建
+        const productType = 'RAW_MATERIAL';
+        
+        // 生成产品名称（可以从SKU或其他方式生成）
+        const name = sku;
 
-        // 转换类型
-        const productType = type === '原材料' ? 'RAW_MATERIAL' : 'FINISHED_PRODUCT';
-
-        // 检查SKU是否已存在
-        const existingProduct = await prisma.product.findUnique({
-          where: { sku },
+        // 检查SKU是否已存在（只检查未删除的产品）
+        const existingProduct = await prisma.product.findFirst({
+          where: {
+            sku,
+            deletedAt: null,
+          },
         });
 
         if (existingProduct) {
@@ -128,21 +214,24 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // 创建产品
+        // 处理图片上传（第一列是封面图片）
+        let imageUrl: string | null = null;
+        if (imageMap.has(i)) {
+          const imageBuffer = imageMap.get(i)!;
+          imageUrl = await uploadProductImage(imageBuffer, sku);
+        }
+
+        // 创建产品（默认都是原材料）
         await prisma.product.create({
           data: {
             sku,
             name,
             type: productType,
             description: description || null,
-            referencePurchasePrice:
-              productType === 'RAW_MATERIAL' && referencePurchasePrice
-                ? referencePurchasePrice
-                : null,
-            guidancePrice:
-              productType === 'FINISHED_PRODUCT' && guidancePrice
-                ? guidancePrice
-                : null,
+            image: imageUrl || null,
+            // 原材料使用参考采购价
+            referencePurchasePrice: unitPrice || null,
+            guidancePrice: null,
             status: 'active',
           },
         });

@@ -3,6 +3,7 @@
 import { FileUploader } from "@/components/file-uploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import NextImage from "next/image";
 import {
   Form,
   FormControl,
@@ -20,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ProductSelector } from "@/components/common/product-selector";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
@@ -68,6 +70,8 @@ export default function ProductForm({
       id: string;
       sku: string;
       name: string;
+      type: 'RAW_MATERIAL' | 'FINISHED_PRODUCT';
+      reference_purchase_price?: number;
       referencePurchasePrice?: number;
     }>
   >([]);
@@ -176,6 +180,8 @@ export default function ProductForm({
               id: p.id,
               sku: p.sku,
               name: p.name,
+              type: 'RAW_MATERIAL' as const,
+              reference_purchase_price: p.reference_purchase_price,
               referencePurchasePrice: p.reference_purchase_price,
             }))
           );
@@ -476,6 +482,25 @@ export default function ProductForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>产品图片</FormLabel>
+                    
+                    {/* 显示现有图片 */}
+                    {isEdit && initialData?.image && !field.value?.length && (
+                      <div className="mb-4 space-y-2">
+                        <p className="text-sm text-muted-foreground">当前图片：</p>
+                        <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
+                          <NextImage
+                            src={initialData.image}
+                            alt="产品图片"
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          上传新图片将替换当前图片
+                        </p>
+                      </div>
+                    )}
+                    
                     <FormControl>
                       <FileUploader
                         value={field.value}
@@ -652,33 +677,14 @@ export default function ProductForm({
                               render={({ field: componentField }) => (
                                 <FormItem>
                                   <FormLabel>原材料 *</FormLabel>
-                                  <Select
-                                    onValueChange={componentField.onChange}
-                                    value={componentField.value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="选择原材料" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {rawMaterials.map((material) => (
-                                        <SelectItem
-                                          key={material.id}
-                                          value={material.id}
-                                        >
-                                          <div className="flex flex-col">
-                                            <span className="font-mono text-sm">
-                                              {material.sku}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                              {material.name}
-                                            </span>
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                  <FormControl>
+                                    <ProductSelector
+                                      value={componentField.value}
+                                      onValueChange={componentField.onChange}
+                                      products={rawMaterials}
+                                      placeholder="选择原材料"
+                                    />
+                                  </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}

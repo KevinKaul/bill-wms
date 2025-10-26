@@ -16,7 +16,7 @@ const baseConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "storage.picamoji.com",
+        hostname: "r2.billgateai.com",
         port: "",
       },
     ],

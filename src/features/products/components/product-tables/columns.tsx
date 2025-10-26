@@ -1,6 +1,7 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/components/ui/table/data-table-column-header";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   PRODUCT_TYPE_LABELS,
   PRODUCT_TYPE_COLORS,
@@ -86,6 +87,31 @@ function ImagePreview({
 }
 
 export const columns: ColumnDef<ProductTableItem>[] = [
+  {
+    id: "select",
+    header: ({ table }: { table: any }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value: any) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+        className="translate-y-[2px]"
+      />
+    ),
+    cell: ({ row }: { row: any }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value: any) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+        className="translate-y-[2px]"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 40,
+  },
   {
     accessorKey: "image",
     header: "图片",

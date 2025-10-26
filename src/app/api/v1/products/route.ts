@@ -21,8 +21,11 @@ export async function POST(request: NextRequest) {
     const validatedData = validateRequest(createProductSchema, requestData);
 
     // 检查SKU是否重复
-    const existingSku = await prisma.product.findUnique({
-      where: { sku: validatedData.sku },
+    const existingSku = await prisma.product.findFirst({
+      where: {
+        sku: validatedData.sku,
+        deletedAt: null,  // 只检查未删除的产品
+      },
     });
 
     if (existingSku) {

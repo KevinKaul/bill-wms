@@ -8,9 +8,11 @@ import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-type ProductListingPage = {};
+type ProductListingPage = {
+  refreshTrigger?: number;
+};
 
-export default function ProductListingPage({}: ProductListingPage) {
+export default function ProductListingPage({ refreshTrigger }: ProductListingPage) {
   const { getToken, isSignedIn } = useAuth();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -117,7 +119,7 @@ export default function ProductListingPage({}: ProductListingPage) {
     };
 
     fetchProducts();
-  }, [isSignedIn, getToken, searchParams]);
+  }, [isSignedIn, getToken, searchParams, refreshTrigger]);
 
   if (loading) {
     return <div className="p-4">加载中...</div>;

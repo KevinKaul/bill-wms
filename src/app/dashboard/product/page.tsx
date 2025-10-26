@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import PageContainer from "@/components/layout/page-container";
 import { buttonVariants } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
@@ -10,11 +13,13 @@ import { IconPlus } from "@tabler/icons-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
-export const metadata = {
-  title: "产品管理 - 仓库管理系统",
-};
-
 export default function Page() {
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <PageContainer scrollable={false}>
       <div className="flex flex-1 flex-col space-y-4">
@@ -24,7 +29,7 @@ export default function Page() {
             description="管理原材料和组合产品，包括SKU、价格、BOM等信息"
           />
           <div className="flex gap-2">
-            <ProductImportDialog />
+            <ProductImportDialog onRefresh={handleRefresh} />
             <Link
               href="/dashboard/product/new"
               className={cn(buttonVariants(), "text-xs md:text-sm")}
@@ -35,11 +40,12 @@ export default function Page() {
         </div>
         <Separator />
         <Suspense
+          key={refreshTrigger}
           fallback={
             <DataTableSkeleton columnCount={6} rowCount={10} filterCount={3} />
           }
         >
-          <ProductListingPage />
+          <ProductListingPage refreshTrigger={refreshTrigger} />
         </Suspense>
       </div>
     </PageContainer>

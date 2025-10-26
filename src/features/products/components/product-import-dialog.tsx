@@ -24,7 +24,11 @@ interface ImportResult {
   }>;
 }
 
-export function ProductImportDialog() {
+interface ProductImportDialogProps {
+  onRefresh?: () => void;
+}
+
+export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -111,6 +115,21 @@ export function ProductImportDialog() {
           `导入完成：成功 ${data.success} 个，失败 ${data.failed} 个`
         );
       }
+      
+      // 只要有成功导入的产品，就刷新页面
+      if (data.success > 0) {
+        // 延迟一下再刷新，让用户看到成功提示
+        setTimeout(() => {
+          // 调用刷新回调
+          if (onRefresh) {
+            onRefresh();
+          }
+          // 关闭对话框
+          setOpen(false);
+          setResult(null);
+          setProgress(0);
+        }, 1000);
+      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : '导入失败，请重试'
@@ -124,14 +143,16 @@ export function ProductImportDialog() {
     }
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    setResult(null);
-    setProgress(0);
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setResult(null);
+      setProgress(0);
+    }
+    setOpen(newOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <IconUpload className="mr-2 h-4 w-4" />
@@ -207,9 +228,12 @@ export function ProductImportDialog() {
                 <IconAlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs">
                   <ul className="mt-2 space-y-1 list-disc list-inside">
-                    <li>SKU和产品名称为必填项</li>
-                    <li>产品类型：原材料 或 组合产品</li>
-                    <li>价格字段为可选项</li>
+                    <li>第1列：产品封面图片（可选）</li>
+                    <li>第2列：SKU（必填）</li>
+                    <li>第3列：参考采购价（可选）</li>
+                    <li>第4列：产品描述（可选）</li>
+                    <li className="text-orange-600 font-medium">⚠️ 导入的产品默认为原材料类型</li>
+                    <li className="text-orange-600 font-medium">⚠️ 组合产品请手动创建</li>
                     <li>重复的SKU将被跳过</li>
                   </ul>
                 </AlertDescription>
@@ -265,7 +289,10 @@ export function ProductImportDialog() {
               继续导入
             </Button>
           )}
-          <Button onClick={handleClose} disabled={loading}>
+          <Button 
+            onClick={() => setOpen(false)} 
+            disabled={loading}
+          >
             {result ? '完成' : '关闭'}
           </Button>
         </div>

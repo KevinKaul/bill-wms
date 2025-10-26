@@ -189,8 +189,11 @@ export async function PUT(
 
     // 检查SKU是否重复（如果更新了SKU）
     if (validatedData.sku && validatedData.sku !== existingProduct.sku) {
-      const duplicateSku = await prisma.product.findUnique({
-        where: { sku: validatedData.sku },
+      const duplicateSku = await prisma.product.findFirst({
+        where: {
+          sku: validatedData.sku,
+          deletedAt: null,  // 只检查未删除的产品
+        },
       });
 
       if (duplicateSku) {

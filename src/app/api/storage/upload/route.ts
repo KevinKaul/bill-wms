@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       buffer,
       file.name,
       file.type,
-      folder || 'products'
+      process.env.NODE_ENV+"/"+folder 
     );
 
     return NextResponse.json(result);

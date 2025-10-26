@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -12,16 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ProductSelector } from "@/components/common/product-selector";
 import { PURCHASE_VALIDATION } from "@/constants/purchase";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -423,31 +416,16 @@ export function PurchasePlanForm({ planId, initialData }: PurchasePlanFormProps)
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>产品 *</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择产品" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {products.map((product) => (
-                                <SelectItem key={product.id} value={product.id}>
-                                  <div className="flex items-center space-x-2">
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs"
-                                    >
-                                      {product.sku}
-                                    </Badge>
-                                    <span>{product.name}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <ProductSelector
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              products={products}
+                              loading={loading}
+                              placeholder="选择产品"
+                              showPrice={false}
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

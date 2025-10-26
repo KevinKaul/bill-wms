@@ -27,6 +27,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ProductSelector } from '@/components/common/product-selector';
 import { PURCHASE_VALIDATION } from '@/constants/purchase';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -79,7 +80,6 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
   const [loading, setLoading] = useState(false);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
-  const [openProductSelectors, setOpenProductSelectors] = useState<{[key: number]: boolean}>({});
   const [openSupplierSelector, setOpenSupplierSelector] = useState(false);
 
   const isEdit = !!orderId;
@@ -480,78 +480,18 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>采购SKU *</FormLabel>
-                          <Popover 
-                            open={openProductSelectors[index] || false} 
-                            onOpenChange={(open) => 
-                              setOpenProductSelectors(prev => ({ ...prev, [index]: open }))
-                            }
-                          >
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className="w-full justify-between"
-                                  disabled={loading}
-                                >
-                                  {field.value
-                                    ? (() => {
-                                        const selectedProduct = products.find(p => p.id === field.value);
-                                        return selectedProduct ? (
-                                          <div className='flex items-center space-x-2'>
-                                            <Badge variant='outline' className='text-xs'>
-                                              {selectedProduct.sku}
-                                            </Badge>
-                                            <span>{selectedProduct.name}</span>
-                                          </div>
-                                        ) : '选择产品';
-                                      })()
-                                    : "选择产品"}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-full p-0">
-                              <Command>
-                                <CommandInput placeholder="搜索产品..." />
-                                <CommandEmpty>未找到产品</CommandEmpty>
-                                <CommandGroup className="max-h-64 overflow-auto">
-                                  {products.map((product) => (
-                                    <CommandItem
-                                      key={product.id}
-                                      value={`${product.sku} ${product.name}`}
-                                      onSelect={() => {
-                                        handleProductChange(index, product.id);
-                                        setOpenProductSelectors(prev => ({ ...prev, [index]: false }));
-                                      }}
-                                    >
-                                      <Check
-                                        className={`mr-2 h-4 w-4 ${
-                                          field.value === product.id ? "opacity-100" : "opacity-0"
-                                        }`}
-                                      />
-                                      <div className='flex items-center space-x-2'>
-                                        <Badge variant='outline' className='text-xs'>
-                                          {product.sku}
-                                        </Badge>
-                                        <span>{product.name}</span>
-                                        {product.type === 'RAW_MATERIAL' && product.reference_purchase_price && (
-                                          <Badge variant='secondary' className='text-xs'>
-                                            ¥{product.reference_purchase_price}
-                                          </Badge>
-                                        )}
-                                        {product.type === 'FINISHED_PRODUCT' && product.guide_unit_price && (
-                                          <Badge variant='secondary' className='text-xs'>
-                                            ¥{product.guide_unit_price}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
+                          <FormControl>
+                            <ProductSelector
+                              value={field.value}
+                              onValueChange={(productId) => {
+                                handleProductChange(index, productId);
+                              }}
+                              products={products}
+                              loading={loading}
+                              placeholder="选择产品"
+                              showPrice={true}
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

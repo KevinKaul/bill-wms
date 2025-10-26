@@ -4,6 +4,7 @@ import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { DataTableSkeleton } from "@/components/ui/table/data-table-skeleton";
 import ProductListingPage from "@/features/products/components/product-listing";
+import { ProductImportDialog } from "@/features/products/components/product-import-dialog";
 import { cn } from "@/lib/utils";
 import { IconPlus } from "@tabler/icons-react";
 import Link from "next/link";
@@ -22,12 +23,15 @@ export default function Page() {
             title="产品管理"
             description="管理原材料和组合产品，包括SKU、价格、BOM等信息"
           />
-          <Link
-            href="/dashboard/product/new"
-            className={cn(buttonVariants(), "text-xs md:text-sm")}
-          >
-            <IconPlus className="mr-2 h-4 w-4" /> 新增产品
-          </Link>
+          <div className="flex gap-2">
+            <ProductImportDialog />
+            <Link
+              href="/dashboard/product/new"
+              className={cn(buttonVariants(), "text-xs md:text-sm")}
+            >
+              <IconPlus className="mr-2 h-4 w-4" /> 新增产品
+            </Link>
+          </div>
         </div>
         <Separator />
         <Suspense

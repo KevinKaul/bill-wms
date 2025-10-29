@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 // Extend Document type to include startViewTransition
 declare global {
   interface Document {
-    startViewTransition?: (callback: () => void) => void;
+    startViewTransition(callback: () => void): void;
   }
 }
 

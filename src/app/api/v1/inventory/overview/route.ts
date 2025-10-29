@@ -91,16 +91,16 @@ export async function GET(request: NextRequest) {
     // 计算低库存预警数量（这里简化处理，实际应该基于库存阈值）
     const lowStockAlerts = 0; // TODO: 实现库存阈值功能
 
-    // 按产品类型统计库存
+    // 按产品类型统计库存（MySQL 语法）
     const rawMaterialStats = await prisma.$queryRaw`
       SELECT 
         'RAW_MATERIAL' as category_id,
         '原材料' as category_name,
         COUNT(DISTINCT p.id) as products_count,
-        COALESCE(SUM(rmb."remainingQuantity"), 0) as total_quantity,
-        COALESCE(SUM(rmb."remainingQuantity" * rmb."actualUnitPrice"), 0) as total_value
+        COALESCE(SUM(rmb.remainingQuantity), 0) as total_quantity,
+        COALESCE(SUM(rmb.remainingQuantity * rmb.actualUnitPrice), 0) as total_value
       FROM products p
-      LEFT JOIN raw_material_batches rmb ON p.id = rmb."productId" AND rmb."remainingQuantity" > 0
+      LEFT JOIN raw_material_batches rmb ON p.id = rmb.productId AND rmb.remainingQuantity > 0
       WHERE p.type = 'RAW_MATERIAL' AND p.status = 'active'
     `;
 
@@ -109,10 +109,10 @@ export async function GET(request: NextRequest) {
         'FINISHED_PRODUCT' as category_id,
         '成品' as category_name,
         COUNT(DISTINCT p.id) as products_count,
-        COALESCE(SUM(fpb."remainingQuantity"), 0) as total_quantity,
-        COALESCE(SUM(fpb."remainingQuantity" * fpb."actualUnitCost"), 0) as total_value
+        COALESCE(SUM(fpb.remainingQuantity), 0) as total_quantity,
+        COALESCE(SUM(fpb.remainingQuantity * fpb.actualUnitCost), 0) as total_value
       FROM products p
-      LEFT JOIN finished_product_batches fpb ON p.id = fpb."productId" AND fpb."remainingQuantity" > 0
+      LEFT JOIN finished_product_batches fpb ON p.id = fpb.productId AND fpb.remainingQuantity > 0
       WHERE p.type = 'FINISHED_PRODUCT' AND p.status = 'active'
     `;
 

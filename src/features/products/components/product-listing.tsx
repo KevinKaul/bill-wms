@@ -93,6 +93,7 @@ export default function ProductListingPage({ refreshTrigger }: ProductListingPag
             id: product.id,
             sku: product.sku,
             name: product.name,
+            description: product.description,
             type: product.type,
             image: product.image,
             reference_purchase_price: product.reference_purchase_price,

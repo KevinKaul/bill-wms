@@ -165,6 +165,22 @@ export const columns: ColumnDef<ProductTableItem>[] = [
     enableColumnFilter: true,
   },
   {
+    id: "description",
+    accessorKey: "description",
+    header: "商品描述",
+    cell: ({ cell }) => {
+      const description = cell.getValue<string>();
+      return description ? (
+        <div className="max-w-48 truncate text-sm text-muted-foreground">
+          {description}
+        </div>
+      ) : (
+        <div className="text-center text-muted-foreground">-</div>
+      );
+    },
+    enableSorting: false,
+  },
+  {
     id: "type",
     accessorKey: "type",
     header: ({ column }: { column: Column<ProductTableItem, unknown> }) => (
@@ -204,21 +220,21 @@ export const columns: ColumnDef<ProductTableItem>[] = [
       );
     },
   },
-  {
-    id: "guidancePrice",
-    accessorKey: "guide_unit_price",
-    header: ({ column }: { column: Column<ProductTableItem, unknown> }) => (
-      <DataTableColumnHeader column={column} title="指导单价" />
-    ),
-    cell: ({ cell }) => {
-      const price = cell.getValue<number>();
-      return price ? (
-        <div className="text-center font-mono">¥{price.toFixed(2)}</div>
-      ) : (
-        <div className="text-center text-muted-foreground">-</div>
-      );
-    },
-  },
+  // {
+  //   id: "guidancePrice",
+  //   accessorKey: "guide_unit_price",
+  //   header: ({ column }: { column: Column<ProductTableItem, unknown> }) => (
+  //     <DataTableColumnHeader column={column} title="指导单价" />
+  //   ),
+  //   cell: ({ cell }) => {
+  //     const price = cell.getValue<number>();
+  //     return price ? (
+  //       <div className="text-center font-mono">¥{price.toFixed(2)}</div>
+  //     ) : (
+  //       <div className="text-center text-muted-foreground">-</div>
+  //     );
+  //   },
+  // },
   {
     id: "bomItemsCount",
     accessorKey: "bom_components_count",

@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
       type: product.type,
       category_id: null, // 暂不实现分类功能
       category_name: null,
-      description: null,
+      description: product.description || null,
       image: product.image || null,
       reference_purchase_price:
         product.referencePurchasePrice?.toNumber() || null,

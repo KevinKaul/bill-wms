@@ -14,6 +14,7 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -80,6 +81,7 @@ export default function ProductForm({
   const defaultValues: Partial<FormValues> = {
     sku: initialData?.sku || "",
     name: initialData?.name || "",
+    description: initialData?.description || "",
     type: initialData?.type || ProductType.RAW_MATERIAL,
     referencePurchasePrice: initialData?.referencePurchasePrice,
     guidancePrice: initialData?.guidancePrice,
@@ -148,6 +150,7 @@ export default function ProductForm({
       const resetData = {
         sku: initialData.sku || "",
         name: initialData.name || "",
+        description: initialData.description || "",
         type: initialData.type || ProductType.RAW_MATERIAL,
         referencePurchasePrice: initialData.referencePurchasePrice,
         guidancePrice: initialData.guidancePrice,
@@ -441,6 +444,29 @@ export default function ProductForm({
                 />
               </div>
 
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>产品描述</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="输入产品描述信息（可选）" 
+                        className="resize-none"
+                        rows={3}
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      详细描述产品的特点、用途或其他相关信息，最多500个字符
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -711,9 +737,9 @@ export default function ProductForm({
                                       }}
                                     />
                                   </FormControl>
-                                  <FormDescription>
+                                  {/* <FormDescription>
                                     生产1个成品所需的该原材料数量
-                                  </FormDescription>
+                                  </FormDescription> */}
                                   <FormMessage />
                                 </FormItem>
                               )}

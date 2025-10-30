@@ -41,6 +41,7 @@ export interface ProductTableItem {
   id: string;
   sku: string;
   name: string;
+  description?: string;
   image?: string;
   type: ProductType;
   typeLabel: string;

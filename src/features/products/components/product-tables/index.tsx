@@ -128,7 +128,7 @@ export function ProductTable<TData, TValue>({
         </div>
       )}
 
-      <DataTable table={table}>
+      <DataTable table={table} totalItems={totalItems}>
         <DataTableToolbar table={table} />
       </DataTable>
     </ProductTableContext.Provider>

@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         type: product.type,
         category_id: null, // 暂不实现分类功能
         category_name: null,
-        description: null,
+        description: product.description,
         image_url: product.image || null,
         reference_purchase_price:
           product.referencePurchasePrice?.toNumber() || null,
@@ -214,6 +214,7 @@ export async function PUT(
     const updateData: any = {
       sku: validatedData.sku,
       name: validatedData.name,
+      description: validatedData.description,
       image: validatedData.image,
     };
 
@@ -334,12 +335,12 @@ export async function DELETE(request: NextRequest) {
 
     // 检查产品是否存在
     const existingProduct = await prisma.product.findUnique({
-      where: { id },
+      where: { id,deletedAt: null },
       include: {
         bomComponents: true, // 检查是否被其他产品引用
       },
     });
-
+    console.log(existingProduct);
     if (!existingProduct) {
       return NextResponse.json(
         {

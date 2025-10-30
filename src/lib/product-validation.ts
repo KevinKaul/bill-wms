@@ -20,6 +20,9 @@ const baseProductFields = {
     .max(PRODUCT_VALIDATION.NAME_MAX_LENGTH, {
       message: `产品名称长度不能超过${PRODUCT_VALIDATION.NAME_MAX_LENGTH}个字符`,
     }),
+  description: z.string().max(500, {
+    message: "产品描述长度不能超过500个字符"
+  }).optional().nullable(),
   image: z.any().optional(), // 前端使用File[]，服务端使用string|null
 };
 
@@ -72,6 +75,9 @@ const serverBaseProductFields = {
     .max(PRODUCT_VALIDATION.NAME_MAX_LENGTH, {
       message: `产品名称长度不能超过${PRODUCT_VALIDATION.NAME_MAX_LENGTH}个字符`,
     }),
+  description: z.string().max(500, {
+    message: "产品描述长度不能超过500个字符"
+  }).optional().nullable(),
   image: z
     .union([z.string().url({ message: "图片URL格式不正确" }), z.null()])
     .optional(),
@@ -125,6 +131,9 @@ export const updateProductSchema = z.object({
     })
     .optional(),
   type: z.nativeEnum(ProductType).optional(),
+  description: z.string().max(500, {
+    message: "产品描述长度不能超过500个字符"
+  }).optional().nullable(),
   image: z
     .union([z.string().url({ message: "图片URL格式不正确" }), z.null()])
     .optional(),

@@ -46,7 +46,7 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
       // 直接打开静态文件下载
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = '产品导入模板.csv';
+      link.download = '产品导入模板.xlsx';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -229,9 +229,10 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
                 <AlertDescription className="text-xs">
                   <ul className="mt-2 space-y-1 list-disc list-inside">
                     <li>第1列：产品封面图片（可选）</li>
-                    <li>第2列：SKU（必填）</li>
-                    <li>第3列：参考采购价（可选）</li>
-                    <li>第4列：产品描述（可选）</li>
+                    <li>第2列：商品名称（必填）</li>
+                    <li>第3列：SKU（必填）</li>
+                    <li>第4列：参考采购价（可选）</li>
+                    <li>第5列：产品描述（可选）</li>
                     <li className="text-orange-600 font-medium">⚠️ 导入的产品默认为原材料类型</li>
                     <li className="text-orange-600 font-medium">⚠️ 组合产品请手动创建</li>
                     <li>重复的SKU将被跳过</li>

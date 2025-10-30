@@ -11,9 +11,11 @@ interface ImportError {
   message: string;
 }
 
-// 简单的CSV解析函数
+// 改进的CSV解析函数，更好地处理编码
 function parseCSV(content: string): string[][] {
-  const lines = content.split('\n');
+  // 清理BOM标记
+  const cleanContent = content.replace(/^\uFEFF/, '');
+  const lines = cleanContent.split(/\r?\n/);
   const rows: string[][] = [];
   
   for (const line of lines) {
@@ -47,6 +49,27 @@ function parseCSV(content: string): string[][] {
   }
   
   return rows;
+}
+
+// 检测文件编码的函数
+function detectEncoding(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  
+  // 检测BOM
+  if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+    return 'utf-8';
+  }
+  
+  // 简单的中文检测，如果有高位字节可能是GBK
+  let hasHighBytes = false;
+  for (let i = 0; i < Math.min(bytes.length, 1000); i++) {
+    if (bytes[i] > 127) {
+      hasHighBytes = true;
+      break;
+    }
+  }
+  
+  return hasHighBytes ? 'gbk' : 'utf-8';
 }
 
 // 从Excel文件中提取图片（使用ExcelJS）
@@ -137,9 +160,11 @@ export async function POST(request: NextRequest) {
       imageMap = await extractImagesFromExcelJS(file);
       console.log(`提取到 ${imageMap.size} 张图片`);
 
-      // 再用XLSX读取数据
+      // 再用XLSX读取数据，指定编码选项
       const workbook = XLSX.read(new Uint8Array(arrayBuffer), { 
-        sheets: 0,
+        type: 'array',
+        codepage: 65001, // UTF-8编码
+        cellText: false,
         cellFormula: false,
         cellStyles: false,
       });
@@ -148,12 +173,35 @@ export async function POST(request: NextRequest) {
       const sheetName = workbook.SheetNames[0];
       if (sheetName) {
         const worksheet = workbook.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        const data = XLSX.utils.sheet_to_json(worksheet, { 
+          header: 1,
+          defval: '', // 空单元格默认值
+          raw: false, // 不使用原始值，确保字符串格式
+        });
         rows = data as string[][];
       }
     } else {
-      // 处理CSV文件
-      const content = await file.text();
+      // 处理CSV文件，自动检测编码
+      const arrayBuffer = await file.arrayBuffer();
+      const encoding = detectEncoding(arrayBuffer);
+      
+      let content: string;
+      try {
+        if (encoding === 'gbk') {
+          // 使用GBK解码器
+          const decoder = new TextDecoder('gbk');
+          content = decoder.decode(arrayBuffer);
+        } else {
+          // 使用UTF-8解码器
+          const decoder = new TextDecoder('utf-8');
+          content = decoder.decode(arrayBuffer);
+        }
+      } catch (error) {
+        console.error('编码解析失败:', error);
+        // 如果都失败，尝试默认方式
+        content = await file.text();
+      }
+      
       rows = parseCSV(content);
     }
 
@@ -170,15 +218,19 @@ export async function POST(request: NextRequest) {
       const row = dataRows[i];
 
       try {
-        // 新的列结构：第1列=封面(图片), 第2列=SKU, 第3列=单价, 第4列=产品描述
+        // 新的列结构：第1列=封面(图片), 第2列=商品名称, 第3列=SKU, 第4列=单价, 第5列=产品描述
         // XLSX读取时会保留空列，所以实际的列索引是：
         // row[0] = 图片列（空）
-        // row[1] = SKU
-        // row[2] = 单价
-        // row[3] = 产品描述
-        const sku = row[1]?.toString().trim();
-        const unitPrice = row[2] ? parseFloat(row[2]) : undefined;
-        const description = row[3]?.toString().trim();
+        // row[1] = 商品名称
+        // row[2] = SKU
+        // row[3] = 单价
+        // row[4] = 产品描述
+        // 确保字符串正确处理，避免乱码
+        const name = row[1] ? String(row[1]).trim() : '';
+        const sku = row[2] ? String(row[2]).trim() : '';
+        const unitPrice = row[3] ? parseFloat(String(row[3])) : undefined;
+        const description = row[4] ? String(row[4]).trim() : '';
+        
 
         // 验证必填字段
         if (!sku) {
@@ -190,12 +242,18 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
+        if (!name) {
+          errors.push({
+            row: rowIndex,
+            message: '商品名称为必填项',
+          });
+          failedCount++;
+          continue;
+        }
+
         // 默认所有导入的产品都是原材料
         // 组合产品需要手动创建
         const productType = 'RAW_MATERIAL';
-        
-        // 生成产品名称（可以从SKU或其他方式生成）
-        const name = sku;
 
         // 检查SKU是否已存在（只检查未删除的产品）
         const existingProduct = await prisma.product.findFirst({

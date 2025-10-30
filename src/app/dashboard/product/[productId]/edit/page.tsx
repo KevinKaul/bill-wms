@@ -1,5 +1,4 @@
 import PageContainer from "@/components/layout/page-container";
-import { Breadcrumbs } from "@/components/breadcrumbs";
 import ProductForm from "@/features/products/components/product-form";
 import { productsApi } from "@/lib/api-client";
 import { notFound } from "next/navigation";
@@ -21,7 +20,7 @@ export default async function EditProductPage({
   if (!response.success || !response.data) {
     notFound();
   }
-
+  console.log("response", response.data);
   const responseData = response.data as any;
   const productData = responseData.product;
   const bomComponents = responseData.bom_components || [];
@@ -41,6 +40,7 @@ export default async function EditProductPage({
             id: productData.id,
             sku: productData.sku,
             name: productData.name,
+            description: productData.description,
             image: productData.image_url,
             type: productData.type,
             referencePurchasePrice: productData.reference_purchase_price,

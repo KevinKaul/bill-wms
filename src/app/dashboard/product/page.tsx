@@ -32,7 +32,7 @@ export default function Page() {
             <ProductImportDialog onRefresh={handleRefresh} />
             <Link
               href="/dashboard/product/new"
-              className={cn(buttonVariants(), "text-xs md:text-sm")}
+              className={cn(buttonVariants({ variant: "outline" }), "text-xs md:text-sm")}
             >
               <IconPlus className="mr-2 h-4 w-4" /> 新增产品
             </Link>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { upload } from '@vercel/blob/client';
 import {
   Dialog,
   DialogContent,
@@ -84,23 +85,22 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
     setResult(null);
 
     try {
-      // 第一步：上传文件到 Blob 存储
+      // 第一步：使用客户端直接上传到 Blob 存储
       setProgress(10);
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
+      
+      // 生成唯一文件名
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(7);
+      const extension = file.name.substring(file.name.lastIndexOf('.'));
+      const blobFileName = `product-imports/${timestamp}-${randomStr}${extension}`;
 
-      const uploadResponse = await fetch('/api/v1/products/import/upload', {
-        method: 'POST',
-        body: uploadFormData,
+      // 使用 @vercel/blob/client 的 upload 方法
+      const blob = await upload(blobFileName, file, {
+        access: 'public',
+        handleUploadUrl: '/api/v1/products/import/upload',
       });
 
-      if (!uploadResponse.ok) {
-        const uploadError = await uploadResponse.json();
-        throw new Error(uploadError.error?.message || '文件上传失败');
-      }
-
-      const uploadData = await uploadResponse.json();
-      const fileUrl = uploadData.data.url;
+      const fileUrl = blob.url;
       console.log('文件上传成功:', fileUrl);
 
       // 第二步：调用导入 API，传递文件 URL
@@ -139,6 +139,7 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
       }
       
       // 清理临时文件（异步，不阻塞主流程）
+      // 注意：在本地开发环境 (localhost) 下，清理可能不会立即执行
       fetch('/api/v1/products/import/cleanup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -183,7 +184,7 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="default" className="cursor-pointer text-xs md:text-sm">
           <IconUpload className="mr-2 h-4 w-4" />
           导入产品
         </Button>

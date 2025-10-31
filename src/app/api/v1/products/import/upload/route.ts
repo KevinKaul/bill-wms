@@ -1,123 +1,67 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 
 /**
- * 上传导入文件到Vercel Blob存储
- * 第一步：客户端上传文件，获取文件URL
+ * 客户端上传处理路由
+ * 生成上传 token 并处理上传完成回调
  */
 export async function POST(request: NextRequest) {
+  const body = (await request.json()) as HandleUploadBody;
+
   try {
-    // 验证用户身份
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'UNAUTHORIZED',
-            message: '未授权访问',
-          },
-        },
-        { status: 401 }
-      );
-    }
+    const jsonResponse = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname: string) => {
+        // 验证用户身份
+        const { userId } = await auth();
+        if (!userId) {
+          throw new Error('未授权访问');
+        }
 
-    // 获取上传的文件
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+        // 验证文件路径和类型
+        const validExtensions = ['.xlsx', '.xls', '.csv'];
+        const hasValidExtension = validExtensions.some(ext => 
+          pathname.toLowerCase().endsWith(ext)
+        );
 
-    if (!file) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'INVALID_REQUEST',
-            message: '未找到上传文件',
-          },
-        },
-        { status: 400 }
-      );
-    }
+        if (!hasValidExtension) {
+          throw new Error('请上传Excel或CSV文件（.xlsx、.xls 或 .csv）');
+        }
 
-    // 验证文件类型
-    const validTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'text/csv',
-      'application/csv',
-    ];
+        // 返回允许的配置
+        return {
+          allowedContentTypes: [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'text/csv',
+            'application/csv',
+          ],
+          tokenPayload: JSON.stringify({
+            userId,
+            uploadedAt: new Date().toISOString(),
+          }),
+        };
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        // 上传完成回调
+        console.log('文件上传完成:', {
+          blob,
+          tokenPayload,
+        });
 
-    const validExtensions = ['.xlsx', '.xls', '.csv'];
-    const fileName = file.name.toLowerCase();
-    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
-
-    if (!validTypes.includes(file.type) && !hasValidExtension) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'INVALID_FILE_TYPE',
-            message: '请上传Excel或CSV文件（.xlsx、.xls 或 .csv）',
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    // 验证文件大小（最大50MB）
-    const maxSize = 50 * 1024 * 1024; // 50MB
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'FILE_TOO_LARGE',
-            message: '文件大小不能超过50MB',
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    // 生成唯一的文件名
-    const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(7);
-    const extension = fileName.substring(fileName.lastIndexOf('.'));
-    const blobFileName = `product-imports/${userId}/${timestamp}-${randomStr}${extension}`;
-
-    // 上传到Vercel Blob
-    const blob = await put(blobFileName, file, {
-      access: 'public',
-      addRandomSuffix: false,
-    });
-
-    console.log('文件上传成功:', {
-      url: blob.url,
-      size: file.size,
-      fileName: file.name,
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        url: blob.url,
-        fileName: file.name,
-        size: file.size,
+        // 这里可以做一些后续处理，比如记录到数据库
+        // 但对于导入功能，我们只需要返回 URL 即可
       },
     });
 
+    return NextResponse.json(jsonResponse);
   } catch (error) {
-    console.error('文件上传失败:', error);
+    console.error('客户端上传处理失败:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'UPLOAD_ERROR',
-          message: error instanceof Error ? error.message : '文件上传失败',
-        },
-      },
-      { status: 500 }
+      { error: (error as Error).message },
+      { status: 400 }
     );
   }
 }

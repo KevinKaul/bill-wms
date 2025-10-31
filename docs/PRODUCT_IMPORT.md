@@ -6,9 +6,11 @@
 
 ## 工作流程
 
-### 1. 文件上传（客户端 → Vercel Blob）
+### 1. 文件上传（客户端直接上传）
 - 用户在前端选择 Excel/CSV 文件
-- 文件直接上传到 Vercel Blob 存储
+- 使用 `@vercel/blob/client` 的 `upload()` 方法
+- 文件**直接从浏览器上传到 Vercel Blob**，不经过 Serverless Function
+- 后端 API 只负责生成上传 token 和验证权限
 - 获得文件的公开访问 URL
 
 ### 2. 导入处理（API → 下载 → 处理）
@@ -23,25 +25,34 @@
 ## API 端点
 
 ### POST /api/v1/products/import/upload
-上传文件到 Blob 存储
+客户端上传处理路由（生成 token）
+
+**功能：**
+1. 验证用户身份
+2. 验证文件类型
+3. 生成上传 token
+4. 处理上传完成回调
 
 **请求：**
-```
-Content-Type: multipart/form-data
-Body: FormData with 'file' field
+```json
+{
+  "pathname": "product-imports/xxx.xlsx",
+  "callbackUrl": "..."
+}
 ```
 
 **响应：**
 ```json
 {
-  "success": true,
-  "data": {
-    "url": "https://blob.vercel-storage.com/...",
-    "fileName": "产品导入.xlsx",
-    "size": 12345
-  }
+  "url": "https://blob.vercel-storage.com/...",
+  "uploadUrl": "...",
+  "token": "..."
 }
 ```
+
+**注意：**
+- 这个 API 由 `@vercel/blob/client` 的 `handleUpload()` 处理
+- 客户端使用 `upload()` 方法时会自动调用此 API
 
 ### POST /api/v1/products/import
 处理产品导入
@@ -122,12 +133,15 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_xxx
 
 ### 前端流程
 ```typescript
-// 1. 上传文件
-const uploadResponse = await fetch('/api/v1/products/import/upload', {
-  method: 'POST',
-  body: formData,
+import { upload } from '@vercel/blob/client';
+
+// 1. 使用客户端直接上传
+const blob = await upload(fileName, file, {
+  access: 'public',
+  handleUploadUrl: '/api/v1/products/import/upload',
 });
-const { data: { url: fileUrl } } = await uploadResponse.json();
+
+const fileUrl = blob.url;
 
 // 2. 导入数据
 const importResponse = await fetch('/api/v1/products/import', {
@@ -145,26 +159,53 @@ fetch('/api/v1/products/import/cleanup', {
 ```
 
 ### 后端流程
+
+**上传处理 API:**
 ```typescript
-// 导入 API 支持两种方式
-if (contentType.includes('multipart/form-data')) {
-  // 方式1：直接上传（兼容旧版本）
-  file = formData.get('file');
-} else if (contentType.includes('application/json')) {
-  // 方式2：URL下载（推荐）
-  const { fileUrl } = await request.json();
-  const response = await fetch(fileUrl);
-  file = new File([await response.blob()], fileName);
+import { handleUpload } from '@vercel/blob/client';
+
+export async function POST(request: Request) {
+  const body = await request.json();
+  
+  const jsonResponse = await handleUpload({
+    body,
+    request,
+    onBeforeGenerateToken: async (pathname) => {
+      // 验证用户和文件类型
+      const { userId } = await auth();
+      if (!userId) throw new Error('未授权');
+      
+      return {
+        allowedContentTypes: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', ...],
+        tokenPayload: JSON.stringify({ userId }),
+      };
+    },
+    onUploadCompleted: async ({ blob }) => {
+      console.log('上传完成:', blob.url);
+    },
+  });
+  
+  return NextResponse.json(jsonResponse);
 }
+```
+
+**导入 API:**
+```typescript
+// 从 URL 下载文件
+const { fileUrl } = await request.json();
+const response = await fetch(fileUrl);
+const file = new File([await response.blob()], fileName);
+// 然后处理导入...
 ```
 
 ## 优势
 
-1. **避免 413 错误**：文件不经过 Serverless Function，直接上传到 Blob
-2. **支持大文件**：最大支持 50MB 文件
-3. **向后兼容**：仍支持直接上传小文件
-4. **自动清理**：导入后自动删除临时文件
+1. **完全避免 413 错误**：文件直接从浏览器上传到 Blob，**完全不经过 Serverless Function**
+2. **支持大文件**：最大 50MB（可配置）
+3. **安全性**：后端 API 验证用户身份和文件类型
+4. **自动清理**：节省存储空间
 5. **进度反馈**：清晰的两步进度显示
+6. **性能优化**：Function 只处理小的 JSON 请求，不处理大文件
 
 ## 故障排查
 
@@ -172,6 +213,12 @@ if (contentType.includes('multipart/form-data')) {
 - 检查 `BLOB_READ_WRITE_TOKEN` 是否正确配置
 - 确认文件大小不超过 50MB
 - 检查文件格式是否支持
+- 检查用户是否已登录（Clerk 认证）
+
+### 本地开发注意事项
+- `onUploadCompleted` 回调在 `localhost` 上**不会执行**
+- 如需测试完整流程，使用 [ngrok](https://ngrok.com/) 等工具
+- 或者直接部署到 Vercel 测试
 
 ### 导入失败
 - 查看错误详情，检查数据格式

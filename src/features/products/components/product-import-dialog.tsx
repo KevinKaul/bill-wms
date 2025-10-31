@@ -147,19 +147,19 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
       }).catch(err => console.warn('清理临时文件失败:', err));
       
       // 只要有成功导入的产品，就刷新页面
-      if (data.success > 0) {
-        // 延迟一下再刷新，让用户看到成功提示
-        setTimeout(() => {
-          // 调用刷新回调
-          if (onRefresh) {
-            onRefresh();
-          }
-          // 关闭对话框
-          setOpen(false);
-          setResult(null);
-          setProgress(0);
-        }, 1000);
-      }
+      // if (data.success > 0) {
+      //   // 延迟一下再刷新，让用户看到成功提示
+      //   setTimeout(() => {
+      //     // 调用刷新回调
+      //     if (onRefresh) {
+      //       onRefresh();
+      //     }
+      //     // 关闭对话框
+      //     setOpen(false);
+      //     setResult(null);
+      //     setProgress(0);
+      //   }, 1000);
+      // }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : '导入失败，请重试'
@@ -324,7 +324,12 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
             </Button>
           )}
           <Button 
-            onClick={() => setOpen(false)} 
+            onClick={() => {
+              setOpen(false);
+              if (onRefresh) {
+                onRefresh();
+              }
+            }}
             disabled={loading}
           >
             {result ? '完成' : '关闭'}

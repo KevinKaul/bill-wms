@@ -48,7 +48,7 @@ function ImagePreview({
         <Image
           src={src || DEFAULT_PRODUCT_IMAGE}
           alt={alt}
-          fill
+          fill quality={100}
           className="object-cover group-hover:scale-105 transition-transform duration-200"
           sizes="48px"
         />
@@ -68,7 +68,7 @@ function ImagePreview({
             <Image
               src={src || DEFAULT_PRODUCT_IMAGE}
               alt={alt}
-              fill
+              fill quality={100}
               className="object-contain p-4"
               sizes="95vw"
               priority

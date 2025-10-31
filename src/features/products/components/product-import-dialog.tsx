@@ -84,17 +84,39 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
     setResult(null);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      // 第一步：上传文件到 Blob 存储
+      setProgress(10);
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
 
+      const uploadResponse = await fetch('/api/v1/products/import/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (!uploadResponse.ok) {
+        const uploadError = await uploadResponse.json();
+        throw new Error(uploadError.error?.message || '文件上传失败');
+      }
+
+      const uploadData = await uploadResponse.json();
+      const fileUrl = uploadData.data.url;
+      console.log('文件上传成功:', fileUrl);
+
+      // 第二步：调用导入 API，传递文件 URL
+      setProgress(30);
+      
       // 模拟进度
       const progressInterval = setInterval(() => {
-        setProgress((prev) => Math.min(prev + 10, 90));
-      }, 200);
+        setProgress((prev) => Math.min(prev + 5, 90));
+      }, 500);
 
       const response = await fetch('/api/v1/products/import', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileUrl }),
       });
 
       clearInterval(progressInterval);
@@ -115,6 +137,13 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
           `导入完成：成功 ${data.success} 个，失败 ${data.failed} 个`
         );
       }
+      
+      // 清理临时文件（异步，不阻塞主流程）
+      fetch('/api/v1/products/import/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileUrl }),
+      }).catch(err => console.warn('清理临时文件失败:', err));
       
       // 只要有成功导入的产品，就刷新页面
       if (data.success > 0) {
@@ -217,9 +246,12 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
               {loading && (
                 <div className="space-y-2">
                   <Progress value={progress} className="h-2" />
-                  <p className="text-xs text-gray-600 text-center">
-                    {progress}%
-                  </p>
+                  <div className="text-xs text-gray-600 text-center space-y-1">
+                    <p className="font-medium">
+                      {progress < 30 ? '步骤 1/2: 上传文件到云存储...' : '步骤 2/2: 处理导入数据...'}
+                    </p>
+                    <p>{progress}%</p>
+                  </div>
                 </div>
               )}
 

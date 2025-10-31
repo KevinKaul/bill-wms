@@ -133,8 +133,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    // 支持两种方式：
+    // 1. 直接上传文件（小文件，兼容性）
+    // 2. 通过URL下载文件（大文件，避免413错误）
+    const contentType = request.headers.get('content-type') || '';
+    let file: File | null = null;
+    let fileUrl: string | null = null;
+
+    if (contentType.includes('multipart/form-data')) {
+      // 方式1：直接上传
+      const formData = await request.formData();
+      file = formData.get('file') as File;
+    } else if (contentType.includes('application/json')) {
+      // 方式2：通过URL下载
+      const body = await request.json();
+      fileUrl = body.fileUrl;
+      
+      if (!fileUrl) {
+        return NextResponse.json(
+          { error: 'No file URL provided' },
+          { status: 400 }
+        );
+      }
+
+      // 从 URL 下载文件
+      console.log('从 URL 下载文件:', fileUrl);
+      const fileResponse = await fetch(fileUrl);
+      if (!fileResponse.ok) {
+        throw new Error('下载文件失败');
+      }
+
+      const blob = await fileResponse.blob();
+      const fileName = fileUrl.split('/').pop() || 'import.xlsx';
+      file = new File([blob], fileName, { type: blob.type });
+      console.log('文件下载成功:', { name: file.name, size: file.size });
+    }
 
     if (!file) {
       return NextResponse.json(

@@ -23,6 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatAmount } from "@/lib/utils";
 
 // 图片预览组件
 function ImagePreview({
@@ -220,7 +221,7 @@ export const columns: ColumnDef<ProductTableItem>[] = [
     cell: ({ cell }) => {
       const price = cell.getValue<number>();
       return price ? (
-        <div className="text-center font-mono">¥{price.toFixed(2)}</div>
+        <div className="text-center font-mono">¥{formatAmount(price)}</div>
       ) : (
         <div className="text-center text-muted-foreground">-</div>
       );
@@ -235,7 +236,7 @@ export const columns: ColumnDef<ProductTableItem>[] = [
     cell: ({ cell }) => {
       const price = cell.getValue<number>();
       return price ? (
-        <div className="text-center font-mono">¥{price.toFixed(2)}</div>
+        <div className="text-center font-mono">¥{formatAmount(price)}</div>
       ) : (
         <div className="text-center text-muted-foreground">-</div>
       );

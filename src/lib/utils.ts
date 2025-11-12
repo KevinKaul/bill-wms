@@ -24,3 +24,15 @@ export function formatBytes(
       : (sizes[i] ?? 'Bytes')
   }`;
 }
+export function formatAmount(
+  amount: number,
+  fractionDigits: number = 2
+): string {
+  if (!isFinite(amount)) return "0.00";
+  const p = Math.pow(10, fractionDigits);
+  const rounded = Math.round((amount + Number.EPSILON) * p) / p;
+  return rounded.toLocaleString("en-US", {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
+}

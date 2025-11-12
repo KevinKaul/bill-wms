@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Factory, Calendar, DollarSign, Package, User, Clock } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
+import { formatAmount } from '@/lib/utils';
 
 interface ProductionOrderDetailProps {
   orderId: string;
@@ -267,16 +268,16 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">物料成本:</span>
-              <span className="font-mono">¥{order.material_cost?.toFixed(2) || '0.00'}</span>
+              <span className="font-mono">¥{formatAmount(order.material_cost || 0)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">加工费用:</span>
-              <span className="font-mono">¥{order.processing_fee?.toFixed(2) || '0.00'}</span>
+              <span className="font-mono">¥{formatAmount(order.processing_fee || 0)}</span>
             </div>
             <Separator />
             <div className="flex justify-between items-center text-lg font-medium">
               <span>总成本:</span>
-              <span className="font-mono text-primary">¥{order.total_cost?.toFixed(2) || '0.00'}</span>
+              <span className="font-mono text-primary">¥{formatAmount(order.total_cost || 0)}</span>
             </div>
           </div>
         </CardContent>
@@ -307,11 +308,11 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
                     </div>
                     <div>
                       <span className="text-muted-foreground">单位成本:</span>
-                      <span className="ml-2 font-mono">¥{usage.unit_cost?.toFixed(2) || '0.00'}</span>
+                      <span className="ml-2 font-mono">¥{formatAmount(usage.unit_cost || 0)}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">总成本:</span>
-                      <span className="ml-2 font-mono font-medium">¥{usage.total_cost?.toFixed(2) || '0.00'}</span>
+                      <span className="ml-2 font-mono font-medium">¥{formatAmount(usage.total_cost || 0)}</span>
                     </div>
                   </div>
                 </div>
@@ -346,7 +347,7 @@ export function ProductionOrderDetail({ orderId }: ProductionOrderDetailProps) {
                     </div>
                     <div>
                       <span className="text-muted-foreground">单位成本:</span>
-                      <span className="ml-2 font-mono">¥{batch.actual_unit_cost?.toFixed(2) || '0.00'}</span>
+                      <span className="ml-2 font-mono">¥{formatAmount(batch.actual_unit_cost || 0)}</span>
                     </div>
                   </div>
                 </div>

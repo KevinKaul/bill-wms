@@ -29,6 +29,7 @@ import {
 import { PRODUCTION_VALIDATION, COMMON_PROCESSING_FEES } from '@/constants/production';
 import { ProductionOrderFormData, MaterialRequirement } from '@/types/production';
 import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { formatAmount } from '@/lib/utils';
 
 const productionOrderSchema = z.object({
   productId: z.string().min(1, '请选择产品'),
@@ -493,19 +494,19 @@ export function ProductionOrderForm({ initialData, orderId }: ProductionOrderFor
                 <div className='grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t'>
                   <div className='text-center'>
                     <div className='text-2xl font-bold text-blue-600'>
-                      ¥{totalMaterialCost.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                      ¥{formatAmount(totalMaterialCost)}
                     </div>
                     <div className='text-sm text-muted-foreground'>预估物料成本</div>
                   </div>
                   <div className='text-center'>
                     <div className='text-2xl font-bold text-green-600'>
-                      ¥{form.watch('processingFee').toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                      ¥{formatAmount(form.watch('processingFee'))}
                     </div>
                     <div className='text-sm text-muted-foreground'>加工费用</div>
                   </div>
                   <div className='text-center'>
                     <div className='text-2xl font-bold text-purple-600'>
-                      ¥{(totalMaterialCost + form.watch('processingFee')).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                      ¥{formatAmount(totalMaterialCost + form.watch('processingFee'))}
                     </div>
                     <div className='text-sm text-muted-foreground'>预估总成本</div>
                   </div>

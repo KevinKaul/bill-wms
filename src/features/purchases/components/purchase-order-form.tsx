@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@clerk/nextjs';
 import { ShoppingCart, Plus, Trash2, Calendar, Check, ChevronsUpDown } from 'lucide-react';
 import * as z from 'zod';
+import { formatAmount } from '@/lib/utils';
 
 const formSchema = z.object({
   supplierId: z.string().min(1, { message: '请选择供应商' }),
@@ -545,7 +546,7 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
                   
                   {/* 显示小计 */}
                   <div className='text-right text-sm text-muted-foreground'>
-                    小计: ¥{(watchedItems[index]?.quantity * watchedItems[index]?.unitPrice || 0).toFixed(2)}
+                    小计: ¥{formatAmount(watchedItems[index]?.quantity * watchedItems[index]?.unitPrice || 0)}
                   </div>
                 </div>
               ))}
@@ -561,16 +562,16 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
               <div className='space-y-2'>
                 <div className='flex justify-between'>
                   <span>商品小计:</span>
-                  <span className='font-mono'>¥{subtotal.toFixed(2)}</span>
+                  <span className='font-mono'>¥{formatAmount(subtotal)}</span>
                 </div>
                 <div className='flex justify-between'>
                   <span>附加费用:</span>
-                  <span className='font-mono'>¥{(watchedAdditionalCost || 0).toFixed(2)}</span>
+                  <span className='font-mono'>¥{formatAmount(watchedAdditionalCost || 0)}</span>
                 </div>
                 <Separator />
                 <div className='flex justify-between text-lg font-medium'>
                   <span>总金额:</span>
-                  <span className='font-mono text-primary'>¥{totalAmount.toFixed(2)}</span>
+                  <span className='font-mono text-primary'>¥{formatAmount(totalAmount)}</span>
                 </div>
               </div>
             </CardContent>

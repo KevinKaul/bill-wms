@@ -23,6 +23,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ClipboardList, Plus, Trash2, Calendar } from "lucide-react";
 import * as z from "zod";
+import { formatAmount } from "@/lib/utils";
 
 const formSchema = z.object({
   title: z
@@ -499,10 +500,10 @@ export function PurchasePlanForm({ planId, initialData }: PurchasePlanFormProps)
                   {/* 显示小计 */}
                   <div className="text-right text-sm text-muted-foreground">
                     预估小计: ¥
-                    {(
+                    {formatAmount(
                       watchedItems[index]?.plannedQuantity *
                         watchedItems[index]?.estimatedUnitPrice || 0
-                    ).toFixed(2)}
+                    )}
                   </div>
                 </div>
               ))}
@@ -533,7 +534,7 @@ export function PurchasePlanForm({ planId, initialData }: PurchasePlanFormProps)
                 <div className="flex justify-between text-lg font-medium">
                   <span>预估总金额:</span>
                   <span className="font-mono text-primary">
-                    ¥{totalEstimated.toFixed(2)}
+                    ¥{formatAmount(totalEstimated)}
                   </span>
                 </div>
               </div>

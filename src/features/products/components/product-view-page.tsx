@@ -14,6 +14,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { notFound } from "next/navigation";
+import { formatAmount } from "@/lib/utils";
 
 type ProductViewPageProps = {
   productId: string;
@@ -120,7 +121,7 @@ export default async function ProductViewPage({
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">参考采购单价</span>
                 <span className="font-mono text-lg font-semibold">
-                  ¥{product.referencePurchasePrice.toFixed(2)}
+                  ¥{formatAmount(product.referencePurchasePrice)}
                 </span>
               </div>
             )}
@@ -128,7 +129,7 @@ export default async function ProductViewPage({
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">指导单价</span>
                 <span className="font-mono text-lg font-semibold">
-                  ¥{product.guidancePrice.toFixed(2)}
+                  ¥{formatAmount(product.guidancePrice)}
                 </span>
               </div>
             )}
@@ -136,7 +137,7 @@ export default async function ProductViewPage({
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">计算成本</span>
                 <span className="font-mono text-lg font-semibold text-orange-600">
-                  ¥{product.calculatedCost.toFixed(2)}
+                  ¥{formatAmount(product.calculatedCost)}
                 </span>
               </div>
             )}
@@ -201,11 +202,11 @@ export default async function ProductViewPage({
                           <span className="text-muted-foreground">
                             单价:{" "}
                             <span className="font-mono font-medium">
-                              ¥{component.cost_per_unit.toFixed(2)}
+                              ¥{formatAmount(component.cost_per_unit)}
                             </span>
                           </span>
                           <span className="font-mono font-semibold text-orange-600">
-                            小计: ¥{component.total_cost.toFixed(2)}
+                            小计: ¥{formatAmount(component.total_cost)}
                           </span>
                         </div>
                       </div>

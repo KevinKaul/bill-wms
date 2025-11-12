@@ -11,6 +11,7 @@ import {
   PAYMENT_STATUS_LABELS
 } from '@/constants/production';
 import { CellAction } from './cell-action';
+import { formatAmount } from '@/lib/utils';
 
 export const columns: ColumnDef<ProductionOrderTableItem>[] = [
   {
@@ -131,7 +132,7 @@ export const columns: ColumnDef<ProductionOrderTableItem>[] = [
       return (
         <span className='text-sm font-medium'>
           {materialCost != null 
-            ? `¥${materialCost.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
+            ? `¥${formatAmount(materialCost)}`
             : '-'
           }
         </span>
@@ -148,7 +149,7 @@ export const columns: ColumnDef<ProductionOrderTableItem>[] = [
       return (
         <span className='text-sm'>
           {processingFee != null 
-            ? `¥${processingFee.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
+            ? `¥${formatAmount(processingFee)}`
             : '-'
           }
         </span>
@@ -165,7 +166,7 @@ export const columns: ColumnDef<ProductionOrderTableItem>[] = [
       return (
         <span className='text-sm font-medium'>
           {totalCost != null 
-            ? `¥${totalCost.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
+            ? `¥${formatAmount(totalCost)}`
             : '-'
           }
         </span>

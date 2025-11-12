@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ShoppingCart, Calendar, DollarSign, Package, User } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
+import { formatAmount } from '@/lib/utils';
 
 interface PurchaseOrderDetailProps {
   orderId: string;
@@ -242,16 +243,16 @@ export function PurchaseOrderDetail({ orderId }: PurchaseOrderDetailProps) {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">商品小计:</span>
-              <span className="font-mono">¥{subtotal.toFixed(2)}</span>
+              <span className="font-mono">¥{formatAmount(subtotal)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">附加费用:</span>
-              <span className="font-mono">¥{(order.additional_cost || 0).toFixed(2)}</span>
+              <span className="font-mono">¥{formatAmount(order.additional_cost || 0)}</span>
             </div>
             <Separator />
             <div className="flex justify-between items-center text-lg font-medium">
               <span>总金额:</span>
-              <span className="font-mono text-primary">¥{totalAmount.toFixed(2)}</span>
+              <span className="font-mono text-primary">¥{formatAmount(totalAmount)}</span>
             </div>
           </div>
         </CardContent>
@@ -281,11 +282,11 @@ export function PurchaseOrderDetail({ orderId }: PurchaseOrderDetailProps) {
                   </div>
                   <div>
                     <span className="text-muted-foreground">单价:</span>
-                    <span className="ml-2 font-mono">¥{item.unit_price.toFixed(2)}</span>
+                    <span className="ml-2 font-mono">¥{formatAmount(item.unit_price)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">小计:</span>
-                    <span className="ml-2 font-mono font-medium">¥{item.total_price.toFixed(2)}</span>
+                    <span className="ml-2 font-mono font-medium">¥{formatAmount(item.total_price)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">已收货:</span>

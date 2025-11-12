@@ -45,6 +45,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Package, Plus, Trash2, Settings2 } from "lucide-react";
+import { formatAmount } from "@/lib/utils";
 const MAX_FILE_SIZE = 5000000;
 
 type FormValues = ProductFormData;
@@ -658,7 +659,7 @@ export default function ProductForm({
                       <h3 className="text-lg font-medium">产品构成 (BOM)</h3>
                       {isClient && calculatedGuidancePrice > 0 && (
                         <div className="ml-4 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                          预计成本: ¥{calculatedGuidancePrice.toFixed(2)}
+                          预计成本: ¥{formatAmount(calculatedGuidancePrice)}
                         </div>
                       )}
                     </div>

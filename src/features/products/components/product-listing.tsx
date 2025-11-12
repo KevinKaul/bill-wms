@@ -100,6 +100,7 @@ export default function ProductListingPage({ refreshTrigger }: ProductListingPag
             guide_unit_price: product.guide_unit_price,
             calculated_cost: product.calculated_cost,
             bom_components_count: product.bom_components_count,
+            bomItems: product.bomItems || [],
             status: product.status,
             created_at: product.created_at
               ? new Date(product.created_at)

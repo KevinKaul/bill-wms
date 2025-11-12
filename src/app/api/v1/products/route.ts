@@ -173,8 +173,8 @@ export async function GET(request: NextRequest) {
     };
     if (validatedParams.search) {
       where.OR = [
-        { sku: { contains: validatedParams.search, mode: "insensitive" } },
-        { name: { contains: validatedParams.search, mode: "insensitive" } },
+        { sku: { contains: validatedParams.search } },
+        { name: { contains: validatedParams.search } },
       ];
     }
     if (validatedParams.type) {
@@ -198,6 +198,14 @@ export async function GET(request: NextRequest) {
         bomItems: {
           select: {
             id: true,
+            quantity: true,
+            component: {
+              select: {
+                id: true,
+                sku: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -218,6 +226,12 @@ export async function GET(request: NextRequest) {
       guide_unit_price: product.guidancePrice?.toNumber() || null,
       calculated_cost: null, // 需要计算
       bom_components_count: product.bomItems.length,
+      bomItems: product.bomItems.map((item: any) => ({
+        id: item.id,
+        componentSku: item.component.sku,
+        componentName: item.component.name,
+        quantity: item.quantity,
+      })),
       status: "active",
       created_at: product.createdAt.toISOString(),
       updated_at: product.updatedAt.toISOString(),

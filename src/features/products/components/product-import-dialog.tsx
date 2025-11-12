@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IconUpload, IconDownload, IconAlertCircle, IconCircleCheckFilled } from '@tabler/icons-react';
 import { toast } from 'sonner';
 
@@ -34,11 +35,17 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [activeTab, setActiveTab] = useState<'raw-material' | 'finished-product'>('raw-material');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const finishedProductFileInputRef = useRef<HTMLInputElement>(null);
 
-  const downloadTemplate = async () => {
+  const downloadTemplate = async (type: 'raw-material' | 'finished-product') => {
     try {
-      const response = await fetch('/api/v1/products/import/template');
+      const endpoint = type === 'raw-material' 
+        ? '/api/v1/products/import/template'
+        : '/api/v1/products/import/finished-product/template';
+      
+      const response = await fetch(endpoint);
       if (!response.ok) throw new Error('Failed to download template');
       
       const data = await response.json();
@@ -47,7 +54,7 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
       // 直接打开静态文件下载
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = '产品导入模板.xlsx';
+      link.download = type === 'raw-material' ? '原材料导入模板.xlsx' : '组合产品导入模板.xlsx';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -59,7 +66,7 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
     }
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, type: 'raw-material' | 'finished-product') => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -111,7 +118,11 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
         setProgress((prev) => Math.min(prev + 5, 90));
       }, 500);
 
-      const response = await fetch('/api/v1/products/import', {
+      const endpoint = type === 'raw-material'
+        ? '/api/v1/products/import'
+        : '/api/v1/products/import/finished-product';
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,15 +200,21 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
           导入产品
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>导入产品</DialogTitle>
           <DialogDescription>
-            上传Excel或CSV文件批量导入产品信息
+            选择导入类型并上传Excel文件批量导入产品信息
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="raw-material">导入原材料</TabsTrigger>
+            <TabsTrigger value="finished-product">导入组合产品</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="raw-material" className="space-y-4 mt-4">
           {!result ? (
             <>
               {/* 下载模板 */}
@@ -209,7 +226,7 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={downloadTemplate}
+                  onClick={() => downloadTemplate('raw-material')}
                   className="w-full"
                 >
                   <IconDownload className="mr-2 h-4 w-4" />
@@ -227,7 +244,7 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
                   ref={fileInputRef}
                   type="file"
                   accept=".xlsx,.xls,.csv"
-                  onChange={handleFileSelect}
+                  onChange={(e) => handleFileSelect(e, 'raw-material')}
                   disabled={loading}
                   className="hidden"
                 />
@@ -266,8 +283,7 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
                     <li>第3列：SKU（必填）</li>
                     <li>第4列：参考采购价（可选）</li>
                     <li>第5列：产品描述（可选）</li>
-                    <li className="text-orange-600 font-medium">⚠️ 导入的产品默认为原材料类型</li>
-                    <li className="text-orange-600 font-medium">⚠️ 组合产品请手动创建</li>
+                    <li className="text-orange-600 font-medium">⚠️ 此模板仅用于导入原材料</li>
                     <li>重复的SKU将被跳过</li>
                   </ul>
                 </AlertDescription>
@@ -275,7 +291,7 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
             </>
           ) : (
             <>
-              {/* 导入结果 */}
+              {/* 导入结果 - 原材料 */}
               <div className="space-y-3">
                 {result.failed === 0 ? (
                   <Alert className="border-green-200 bg-green-50">
@@ -311,7 +327,122 @@ export function ProductImportDialog({ onRefresh }: ProductImportDialogProps) {
               </div>
             </>
           )}
-        </div>
+          </TabsContent>
+
+          <TabsContent value="finished-product" className="space-y-4 mt-4">
+          {!result ? (
+            <>
+              {/* 下载模板 */}
+              <div className="rounded-lg border border-dashed border-gray-300 p-4">
+                <p className="mb-2 text-sm font-medium">第一步：下载模板</p>
+                <p className="mb-3 text-xs text-gray-600">
+                  下载组合产品导入模板，每个Sheet对应一个组合产品
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadTemplate('finished-product')}
+                  className="w-full"
+                >
+                  <IconDownload className="mr-2 h-4 w-4" />
+                  下载模板
+                </Button>
+              </div>
+
+              {/* 上传文件 */}
+              <div className="rounded-lg border border-dashed border-gray-300 p-4">
+                <p className="mb-2 text-sm font-medium">第二步：上传文件</p>
+                <p className="mb-3 text-xs text-gray-600">
+                  选择填写好的Excel文件进行导入
+                </p>
+                <input
+                  ref={finishedProductFileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => handleFileSelect(e, 'finished-product')}
+                  disabled={loading}
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => finishedProductFileInputRef.current?.click()}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  <IconUpload className="mr-2 h-4 w-4" />
+                  {loading ? '导入中...' : '选择文件'}
+                </Button>
+              </div>
+
+              {/* 进度条 */}
+              {loading && (
+                <div className="space-y-2">
+                  <Progress value={progress} className="h-2" />
+                  <div className="text-xs text-gray-600 text-center space-y-1">
+                    <p className="font-medium">
+                      {progress < 30 ? '步骤 1/2: 上传文件到云存储...' : '步骤 2/2: 处理导入数据...'}
+                    </p>
+                    <p>{progress}%</p>
+                  </div>
+                </div>
+              )}
+
+              {/* 提示信息 */}
+              <Alert>
+                <IconAlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  <ul className="mt-2 space-y-1 list-disc list-inside">
+                    <li>每个Sheet对应一个组合产品</li>
+                    <li>必填列：SKU、产品名称、产品描述</li>
+                    <li>第1列：产品封面图片（可选）</li>
+                    <li>BOM结构：原材料SKU、需要数量</li>
+                    <li>系统会自动关联BOM中的原材料</li>
+                    <li>重复的SKU将被跳过</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            </>
+          ) : (
+            <>
+              {/* 导入结果 - 组合产品 */}
+              <div className="space-y-3">
+                {result.failed === 0 ? (
+                  <Alert className="border-green-200 bg-green-50">
+                    <IconCircleCheckFilled className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">
+                      导入成功！已导入 {result.success} 个产品
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert className="border-yellow-200 bg-yellow-50">
+                    <IconAlertCircle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-yellow-800">
+                      导入完成：成功 {result.success} 个，失败 {result.failed} 个
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* 错误列表 */}
+                {result.errors.length > 0 && (
+                  <div className="rounded-lg bg-red-50 p-3">
+                    <p className="mb-2 text-xs font-medium text-red-900">
+                      错误详情：
+                    </p>
+                    <div className="max-h-40 overflow-y-auto space-y-1">
+                      {result.errors.map((error, index) => (
+                        <p key={index} className="text-xs text-red-700">
+                          第 {error.row} 行：{error.message}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          </TabsContent>
+        </Tabs>
 
         <div className="flex justify-end gap-2">
           {result && (

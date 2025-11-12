@@ -17,6 +17,12 @@ import { CellAction } from "./cell-action";
 import { PRODUCT_TYPE_OPTIONS } from "./options";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // 图片预览组件
 function ImagePreview({
@@ -209,7 +215,7 @@ export const columns: ColumnDef<ProductTableItem>[] = [
     id: "referencePurchasePrice",
     accessorKey: "reference_purchase_price",
     header: ({ column }: { column: Column<ProductTableItem, unknown> }) => (
-      <DataTableColumnHeader column={column} title="参考采购价" />
+      <DataTableColumnHeader column={column} title="原材料采购价" />
     ),
     cell: ({ cell }) => {
       const price = cell.getValue<number>();
@@ -220,31 +226,67 @@ export const columns: ColumnDef<ProductTableItem>[] = [
       );
     },
   },
-  // {
-  //   id: "guidancePrice",
-  //   accessorKey: "guide_unit_price",
-  //   header: ({ column }: { column: Column<ProductTableItem, unknown> }) => (
-  //     <DataTableColumnHeader column={column} title="指导单价" />
-  //   ),
-  //   cell: ({ cell }) => {
-  //     const price = cell.getValue<number>();
-  //     return price ? (
-  //       <div className="text-center font-mono">¥{price.toFixed(2)}</div>
-  //     ) : (
-  //       <div className="text-center text-muted-foreground">-</div>
-  //     );
-  //   },
-  // },
+  {
+    id: "guidancePrice",
+    accessorKey: "guide_unit_price",
+    header: ({ column }: { column: Column<ProductTableItem, unknown> }) => (
+      <DataTableColumnHeader column={column} title="组合产品单价" />
+    ),
+    cell: ({ cell }) => {
+      const price = cell.getValue<number>();
+      return price ? (
+        <div className="text-center font-mono">¥{price.toFixed(2)}</div>
+      ) : (
+        <div className="text-center text-muted-foreground">-</div>
+      );
+    },
+  },
   {
     id: "bomItemsCount",
     accessorKey: "bom_components_count",
     header: "BOM组件",
-    cell: ({ cell }) => {
-      const count = cell.getValue<number>();
-      return count > 0 ? (
-        <Badge variant="outline">{count}个组件</Badge>
-      ) : (
-        <div className="text-center text-muted-foreground">-</div>
+    cell: ({ row }) => {
+      const count = (row.original as any).bom_components_count || 0;
+      const bomItems = (row.original as any).bomItems || [];
+      
+      if (count === 0) {
+        return <div className="text-center text-muted-foreground">-</div>;
+      }
+
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="cursor-help">
+                {count}个组件
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="w-64">
+              <div className="space-y-2">
+                <p className="font-semibold text-sm">BOM构成：</p>
+                <div className="space-y-1">
+                  {bomItems.length > 0 ? (
+                    bomItems.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex justify-between items-center text-xs"
+                      >
+                        <span className="text-gray-300">
+                          {item.componentSku} - {item.componentName}
+                        </span>
+                        <span className="font-mono text-blue-300">
+                          ×{item.quantity}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-400">暂无BOM数据</p>
+                  )}
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     },
     enableSorting: false,

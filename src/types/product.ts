@@ -49,6 +49,12 @@ export interface ProductTableItem {
   guidancePrice?: number;
   calculatedCost?: number;
   bomItemsCount: number;
+  bomItems?: Array<{
+    id: string;
+    componentSku: string;
+    componentName: string;
+    quantity: number;
+  }>;
   createdAt: Date;
 }
 

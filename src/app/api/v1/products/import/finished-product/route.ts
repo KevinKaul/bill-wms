@@ -312,11 +312,18 @@ export async function POST(request: NextRequest) {
             },
           });
 
+          // 去重：同一个原料只保留一条记录，合并数量
+          const bomMap = new Map<string, number>();
+          for (const bomItem of bomItems) {
+            const existing = bomMap.get(bomItem.componentSku) || 0;
+            bomMap.set(bomItem.componentSku, existing + bomItem.quantity);
+          }
+
           // 创建BOM项
-          const bomItemsData = bomItems.map(bomItem => ({
+          const bomItemsData = Array.from(bomMap.entries()).map(([componentSku, quantity]) => ({
             productId: product.id,
-            componentId: skuToIdMap.get(bomItem.componentSku)!,
-            quantity: bomItem.quantity,
+            componentId: skuToIdMap.get(componentSku)!,
+            quantity,
           }));
 
           await tx.bOMItem.createMany({

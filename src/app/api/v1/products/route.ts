@@ -69,12 +69,22 @@ export async function POST(request: NextRequest) {
         validatedData.bomItems &&
         validatedData.bomItems.length > 0
       ) {
+        // 去重：同一个componentId只保留一条记录，合并数量
+        const bomMap = new Map<string, number>();
+        for (const item of validatedData.bomItems) {
+          const existing = bomMap.get(item.componentId) || 0;
+          bomMap.set(item.componentId, existing + item.quantity);
+        }
+
+        // 转换为BOM项数据
+        const bomItemsData = Array.from(bomMap.entries()).map(([componentId, quantity]) => ({
+          productId: product.id,
+          componentId,
+          quantity,
+        }));
+
         await tx.bOMItem.createMany({
-          data: validatedData.bomItems.map((item) => ({
-            productId: product.id,
-            componentId: item.componentId,
-            quantity: item.quantity,
-          })),
+          data: bomItemsData,
         });
       }
 

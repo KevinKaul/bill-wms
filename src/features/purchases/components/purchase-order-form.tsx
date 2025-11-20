@@ -80,7 +80,6 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
   const [openSupplierSelector, setOpenSupplierSelector] = useState(false);
 
   const isEdit = !!orderId;
@@ -107,38 +106,26 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
     name: 'items'
   });
 
-  // 加载供应商和产品数据
+  // 加载供应商数据
   useEffect(() => {
     const loadData = async () => {
       try {
         const token = await getToken();
-        const [suppliersResponse, productsResponse] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/suppliers?per_page=100`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/products?per_page=100`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          })
-        ]);
+        const suppliersResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/v1/suppliers?per_page=1000`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
-        if (!suppliersResponse.ok || !productsResponse.ok) {
-          throw new Error('获取数据失败');
+        if (!suppliersResponse.ok) {
+          throw new Error('获取供应商数据失败');
         }
 
-        const [suppliersData, productsData] = await Promise.all([
-          suppliersResponse.json(),
-          productsResponse.json()
-        ]);
-
+        const suppliersData = await suppliersResponse.json();
         setSuppliers(suppliersData.data?.suppliers || []);
-        setProducts(productsData.data?.products || []);
       } catch (error) {
-        toast.error('加载数据失败');
-        console.error('Load data error:', error);
+        toast.error('加载供应商数据失败');
+        console.error('Load suppliers error:', error);
       }
     };
     loadData();
@@ -238,40 +225,14 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
     }
   };
 
-  // 处理产品选择变化，自动填入参考采购单价
+  // 处理产品选择变化
   const handleProductChange = (index: number, productId: string) => {
-    const selectedProduct = products.find(p => p.id === productId);
-    
-    console.log('=== 产品选择调试信息 ===');
-    console.log('选择的产品ID:', productId);
-    console.log('找到的产品:', selectedProduct);
-    console.log('产品类型:', selectedProduct?.type);
-    console.log('参考采购价格:', selectedProduct?.reference_purchase_price);
-    console.log('所有产品列表:', products);
-    
-    // 先设置产品ID
+    // 设置产品ID
     form.setValue(`items.${index}.productId`, productId);
     
-    // 根据产品类型自动带入价格
-    let priceToSet = 0.01; // 默认价格
-    let priceSource = '默认价格';
-    
-    if (selectedProduct) {
-      if (selectedProduct.type === 'RAW_MATERIAL' && selectedProduct.reference_purchase_price) {
-        priceToSet = selectedProduct.reference_purchase_price;
-        priceSource = '参考采购价格';
-      } else if (selectedProduct.type === 'FINISHED_PRODUCT' && selectedProduct.guide_unit_price) {
-        priceToSet = selectedProduct.guide_unit_price;
-        priceSource = '指导价格';
-      }
-    }
-    
-    console.log('设置价格:', priceToSet, '来源:', priceSource);
-    form.setValue(`items.${index}.unitPrice`, priceToSet);
-    form.trigger(`items.${index}.unitPrice`);
-    
-    console.log('当前表单值:', form.getValues(`items.${index}`));
-    console.log('=== 调试信息结束 ===');
+    // Note: 价格需要手动输入或从产品详情API获取
+    // ProductSelector现在是实时搜索，不在此组件中维护完整产品列表
+    console.log('产品已选择:', productId);
   };
 
   // 计算总金额
@@ -487,10 +448,10 @@ export function PurchaseOrderForm({ orderId }: PurchaseOrderFormProps) {
                               onValueChange={(productId) => {
                                 handleProductChange(index, productId);
                               }}
-                              products={products}
-                              loading={loading}
                               placeholder="选择产品"
                               showPrice={true}
+                              productType="RAW_MATERIAL"
+                              disabled={loading}
                             />
                           </FormControl>
                           <FormMessage />

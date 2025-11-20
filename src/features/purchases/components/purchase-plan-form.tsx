@@ -73,7 +73,6 @@ interface PurchasePlanFormProps {
 export function PurchasePlanForm({ planId, initialData }: PurchasePlanFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
   const [planData, setPlanData] = useState<any>(null);
 
   const isEdit = !!planId;
@@ -162,24 +161,7 @@ export function PurchasePlanForm({ planId, initialData }: PurchasePlanFormProps)
     fetchPlanData();
   }, [planId, form]);
 
-  // 加载产品数据
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('/api/v1/products');
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            setProducts(result.data.products || []);
-          }
-        }
-      } catch (error) {
-        console.error('获取产品列表失败:', error);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+  // Note: 产品数据现在由ProductSelector组件内部实时加载
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -421,10 +403,9 @@ export function PurchasePlanForm({ planId, initialData }: PurchasePlanFormProps)
                             <ProductSelector
                               value={field.value}
                               onValueChange={field.onChange}
-                              products={products}
-                              loading={loading}
                               placeholder="选择产品"
                               showPrice={false}
+                              disabled={loading}
                             />
                           </FormControl>
                           <FormMessage />

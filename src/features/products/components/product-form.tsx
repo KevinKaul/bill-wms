@@ -168,7 +168,7 @@ export default function ProductForm({
       try {
         const response = await clientApi.products.getProducts({
           type: ProductType.RAW_MATERIAL,
-          pageSize: 100, // 获取足够多的原材料
+          pageSize: 1000, // 获取足够多的原材料
         });
         if (response.success && response.data) {
           const productsData = response.data as {
@@ -708,8 +708,8 @@ export default function ProductForm({
                                     <ProductSelector
                                       value={componentField.value}
                                       onValueChange={componentField.onChange}
-                                      products={rawMaterials}
                                       placeholder="选择原材料"
+                                      productType="RAW_MATERIAL"
                                     />
                                   </FormControl>
                                   <FormMessage />

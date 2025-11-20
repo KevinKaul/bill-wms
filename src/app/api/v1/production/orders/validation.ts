@@ -47,7 +47,7 @@ export const queryProcessOrdersSchema = z.object({
   per_page: z.coerce
     .number()
     .min(1, "每页数量必须大于0")
-    .max(100, "每页数量不能超过100")
+    .max(1000, "每页数量不能超过1000")
     .default(10),
   search: z.string().optional(),
   product_id: z.string().optional(),

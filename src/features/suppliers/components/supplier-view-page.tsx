@@ -16,7 +16,9 @@ import {
   CreditCard,
   Edit,
   FileText,
-  Calendar
+  Calendar,
+  Landmark,
+  UserCircle
 } from 'lucide-react';
 
 interface SupplierViewPageProps {
@@ -76,11 +78,22 @@ export function SupplierViewPage({ supplier }: SupplierViewPageProps) {
               </div>
               
               <div className='space-y-2'>
+                <div className='text-sm font-medium text-muted-foreground'>供应商类型</div>
+                <div>
+                  <Badge variant='secondary'>
+                    {supplier.type === 'material' ? '原材料供应商' : 
+                     supplier.type === 'processing' ? '加工供应商' : 
+                     supplier.type === 'both' ? '原材料+加工供应商' : supplier.type}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className='space-y-2'>
                 <div className='text-sm font-medium text-muted-foreground flex items-center space-x-1'>
                   <CreditCard className='h-4 w-4' />
-                  <span>账号</span>
+                  <span>银行账户/卡号</span>
                 </div>
-                <div className='font-mono text-sm'>{supplier.account}</div>
+                <div className='font-mono text-sm'>{supplier.account || '-'}</div>
               </div>
               
               <div className='space-y-2'>
@@ -152,7 +165,27 @@ export function SupplierViewPage({ supplier }: SupplierViewPageProps) {
               </div>
             )}
             
-            {!supplier.contact_person && !supplier.phone && !supplier.email && !supplier.address && (
+            {supplier.bank_name && (
+              <div className='space-y-2'>
+                <div className='text-sm font-medium text-muted-foreground flex items-center space-x-1'>
+                  <Landmark className='h-4 w-4' />
+                  <span>开户行</span>
+                </div>
+                <div className='text-sm'>{supplier.bank_name}</div>
+              </div>
+            )}
+            
+            {supplier.account_name && (
+              <div className='space-y-2'>
+                <div className='text-sm font-medium text-muted-foreground flex items-center space-x-1'>
+                  <UserCircle className='h-4 w-4' />
+                  <span>收款人姓名</span>
+                </div>
+                <div className='text-sm'>{supplier.account_name}</div>
+              </div>
+            )}
+            
+            {!supplier.contact_person && !supplier.phone && !supplier.email && !supplier.address && !supplier.bank_name && !supplier.account_name && (
               <div className='text-center text-muted-foreground py-4'>
                 <User className='h-8 w-8 mx-auto mb-2 opacity-50' />
                 <p className='text-sm'>暂无联系信息</p>

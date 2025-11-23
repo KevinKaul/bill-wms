@@ -35,10 +35,12 @@ export default async function Page({ params }: PageProps) {
             name: supplier.name,
             account: supplier.account,
             type: supplier.type,
-            contactPerson: supplier.contactPerson,
+            contactPerson: supplier.contact_person,
             phone: supplier.phone,
             email: supplier.email,
             address: supplier.address,
+            bankName: supplier.bank_name,
+            accountName: supplier.account_name,
             remark: supplier.remark
           }} 
         />

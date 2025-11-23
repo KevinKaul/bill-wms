@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
         phone: validatedData.phone,
         email: validatedData.email,
         address: validatedData.address,
+        bankName: validatedData.bank_name,
+        accountName: validatedData.account_name,
       },
     });
 
@@ -60,6 +62,8 @@ export async function POST(request: NextRequest) {
         phone: supplier.phone,
         email: supplier.email,
         address: supplier.address,
+        bank_name: supplier.bankName,
+        account_name: supplier.accountName,
         status: supplier.status,
         created_at: supplier.createdAt.toISOString(),
         updated_at: supplier.updatedAt.toISOString(),
@@ -186,6 +190,8 @@ export async function GET(request: NextRequest) {
       phone: supplier.phone,
       email: supplier.email,
       address: supplier.address,
+      bank_name: supplier.bankName,
+      account_name: supplier.accountName,
       status: supplier.status,
       created_at: supplier.createdAt.toISOString(),
       updated_at: supplier.updatedAt.toISOString(),

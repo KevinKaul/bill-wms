@@ -154,19 +154,48 @@ export function createClientApi(getToken: () => Promise<string | null>) {
       },
 
       createSupplier: async (supplierData: any) => {
+        // Convert camelCase to snake_case for API
+        const apiData = {
+          code: supplierData.code,
+          name: supplierData.name,
+          account: supplierData.account,
+          type: supplierData.type,
+          contact_person: supplierData.contactPerson,
+          phone: supplierData.phone,
+          email: supplierData.email,
+          address: supplierData.address,
+          bank_name: supplierData.bankName,
+          account_name: supplierData.accountName,
+          remark: supplierData.remark,
+        };
         return clientApiRequest(
           "/api/v1/suppliers",
           "POST",
-          supplierData,
+          apiData,
           getToken
         );
       },
 
       updateSupplier: async (id: string, supplierData: any) => {
+        // Convert camelCase to snake_case for API
+        const apiData = {
+          code: supplierData.code,
+          name: supplierData.name,
+          account: supplierData.account,
+          type: supplierData.type,
+          contact_person: supplierData.contactPerson,
+          phone: supplierData.phone,
+          email: supplierData.email,
+          address: supplierData.address,
+          bank_name: supplierData.bankName,
+          account_name: supplierData.accountName,
+          remark: supplierData.remark,
+          status: supplierData.status,
+        };
         return clientApiRequest(
           `/api/v1/suppliers/${id}`,
           "PUT",
-          supplierData,
+          apiData,
           getToken
         );
       },

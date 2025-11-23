@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, Eye, Copy, Trash, CheckCircle, DollarSign, Truck } from 'lucide-react';
+import { MoreHorizontal, Eye, Copy, Trash, CheckCircle, DollarSign, Truck, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const { getToken } = useAuth();
-  const { onDeletePurchaseOrder } = usePurchaseOrderTable();
+  const { onDeletePurchaseOrder, onRefresh } = usePurchaseOrderTable();
 
   const onConfirm = async () => {
     try {
@@ -65,10 +65,27 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const onConfirmOrder = async () => {
     try {
       setLoading(true);
-      // TODO: 实现确认采购单逻辑
+      const token = await getToken();
+      
+      const response = await fetch(`/api/v1/purchase/orders/${data.id}/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || '确认采购单失败');
+      }
+
       toast.success('采购单已确认');
+      onRefresh?.();
     } catch (error) {
-      toast.error('确认失败，请重试');
+      console.error('Confirm order error:', error);
+      toast.error(error instanceof Error ? error.message : '确认失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -99,6 +116,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   };
 
   const canConfirm = data.status === 'draft';
+  const canEdit = data.status === 'draft'; // 只有草稿状态可以编辑
   const canMarkPaid = data.status === 'confirmed' && data.paymentStatus === 'UNPAID';
   const canMarkDelivered = data.status === 'confirmed' && data.deliveryStatus === 'NOT_DELIVERED';
   const canDelete = data.status === 'draft' || data.status === 'cancelled';
@@ -129,6 +147,13 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           >
             <Eye className='mr-2 h-4 w-4' /> 查看详情
           </DropdownMenuItem>
+          {canEdit && (
+            <DropdownMenuItem
+              onClick={() => router.push(`/dashboard/purchase/order/${data.id}/edit`)}
+            >
+              <Edit className='mr-2 h-4 w-4' /> 编辑
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           {canConfirm && (
             <DropdownMenuItem onClick={onConfirmOrder} disabled={loading}>

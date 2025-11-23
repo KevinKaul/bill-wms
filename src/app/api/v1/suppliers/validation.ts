@@ -25,6 +25,8 @@ export const createSupplierSchema = z.object({
     .string()
     .optional(),
   address: z.string().max(500, "地址长度不能超过500字符").optional(),
+  bank_name: z.string().max(200, "开户行名称长度不能超过200字符").optional(),
+  account_name: z.string().max(100, "收款人姓名长度不能超过100字符").optional(),
 });
 
 // 供应商更新验证Schema
@@ -56,6 +58,8 @@ export const updateSupplierSchema = z.object({
     // .max(100, "邮箱长度不能超过100字符")
     .optional(),
   address: z.string().max(500, "地址长度不能超过500字符").optional(),
+  bank_name: z.string().max(200, "开户行名称长度不能超过200字符").optional(),
+  account_name: z.string().max(100, "收款人姓名长度不能超过100字符").optional(),
   status: z.enum(["active", "inactive"]).optional(),
 });
 

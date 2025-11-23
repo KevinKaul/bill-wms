@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { STATUS_COLORS, STATUS_LABELS } from '@/constants/purchase';
 import { CellAction } from './cell-action';
 import { StatusUpdateCell } from './status-update-cell';
+import { PaymentStatusCell } from './payment-status-cell';
 
 export const columns: ColumnDef<PurchaseOrderTableItem>[] = [
   {
@@ -71,9 +72,8 @@ export const columns: ColumnDef<PurchaseOrderTableItem>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <StatusUpdateCell 
+        <PaymentStatusCell 
           data={row.original} 
-          statusType="payment"
           onUpdate={() => window.location.reload()}
         />
       );

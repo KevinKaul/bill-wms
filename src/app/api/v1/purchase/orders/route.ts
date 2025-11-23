@@ -311,6 +311,7 @@ export async function GET(request: NextRequest) {
         supplier_name: order.supplier.fullName,
         status: order.status,
         payment_status: order.paymentStatus.toLowerCase(),
+        paid_amount: Number(order.paidAmount || 0),
         delivery_status: order.deliveryStatus.toLowerCase().replace("_", "_"),
         subtotal,
         additional_cost: Number(order.additionalPrice),

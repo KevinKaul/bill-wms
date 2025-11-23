@@ -2,7 +2,7 @@
 export type PurchaseOrderStatus = 'draft' | 'confirmed' | 'completed' | 'cancelled';
 
 // 付款状态
-export type PaymentStatus = 'UNPAID' | 'PAID';
+export type PaymentStatus = 'UNPAID' | 'PARTIAL_PAID' | 'PAID';
 
 // 到货状态
 export type DeliveryStatus = 'NOT_DELIVERED' | 'DELIVERED';
@@ -33,6 +33,7 @@ export interface PurchaseOrder {
   supplierName: string; // 供应商名称
   status: PurchaseOrderStatus; // 采购单状态
   paymentStatus: PaymentStatus; // 付款状态
+  paidAmount: number; // 已付款金额
   deliveryStatus: DeliveryStatus; // 到货状态
   arrivalStatus: DeliveryStatus; // 到货状态别名，兼容性字段
   additionalCost: number; // 附加价格（如运费）
@@ -113,6 +114,7 @@ export interface PurchaseOrderTableItem {
   supplierName: string;
   status: PurchaseOrderStatus;
   paymentStatus: PaymentStatus;
+  paidAmount: number; // 已付款金额
   deliveryStatus: DeliveryStatus;
   totalAmount: number;
   itemCount: number; // 明细项数量

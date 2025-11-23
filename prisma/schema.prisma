@@ -19,8 +19,9 @@ enum ProductType {
 }
 
 enum PaymentStatus {
-  UNPAID  // 未付款
-  PAID    // 已付款
+  UNPAID       // 未付款
+  PARTIAL_PAID // 部分付款
+  PAID         // 已付款
 }
 
 enum DeliveryStatus {
@@ -101,12 +102,14 @@ model Supplier {
   id          String @id @default(cuid())
   code        String @unique // 简称/代号
   fullName    String // 供应商全称
-  account     String? // 银行账户
+  account     String? // 银行账户/卡号
   type        String @default("material") // 类型：material、processing、both
   contact_person String? // 联系人
   phone       String? // 电话
   email       String? // 邮箱
   address     String? // 地址
+  bankName    String? // 开户行
+  accountName String? // 收款人姓名
   status      String @default("active") // 状态：active或inactive
   
   purchaseOrders PurchaseOrder[]
@@ -171,6 +174,7 @@ model PurchaseOrder {
   totalAmount     Decimal       @db.Decimal(10, 2) // 采购单总价
   status          String        @default("draft") // 状态：draft、confirmed、completed、cancelled
   paymentStatus   PaymentStatus @default(UNPAID) // 付款状态
+  paidAmount      Decimal       @default(0) @db.Decimal(10, 2) // 已付款金额
   deliveryStatus  DeliveryStatus @default(NOT_DELIVERED) // 到货状态
   orderDate       DateTime      @default(now()) // 订单日期
   expectedDeliveryDate DateTime? // 预计到货日期
@@ -180,6 +184,7 @@ model PurchaseOrder {
   supplier        Supplier      @relation(fields: [supplierId], references: [id])
   items           PurchaseOrderItem[]
   rawMaterialBatches RawMaterialBatch[]
+  paymentRecords  PurchaseOrderPayment[] // 付款记录
   
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -205,6 +210,24 @@ model PurchaseOrderItem {
   deletedAt       DateTime?     // 软删除时间戳
   
   @@map("purchase_order_items")
+}
+
+// 采购单付款记录
+model PurchaseOrderPayment {
+  id              String        @id @default(cuid())
+  purchaseOrderId String        // 采购单ID
+  amount          Decimal       @db.Decimal(10, 2) // 付款金额
+  paymentDate     DateTime      @default(now()) // 付款日期
+  paymentMethod   String?       // 付款方式（现金、转账、支票等）
+  remark          String?       // 备注
+  
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?     // 软删除时间戳
+  
+  @@map("purchase_order_payments")
 }
 
 // 4. 产品加工 - 加工单

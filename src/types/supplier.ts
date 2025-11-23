@@ -8,6 +8,8 @@ export interface Supplier {
   phone?: string; // 联系电话
   email?: string; // 邮箱
   address?: string; // 地址
+  bankName?: string; // 开户行
+  accountName?: string; // 收款人姓名
   remark?: string; // 备注
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +25,8 @@ export interface SupplierFormData {
   phone?: string;
   email?: string;
   address?: string;
+  bankName?: string; // 开户行
+  accountName?: string; // 收款人姓名
   remark?: string;
 }
 
@@ -56,6 +60,8 @@ export interface SupplierDetail {
   phone?: string;
   email?: string;
   address?: string;
+  bank_name?: string; // 开户行
+  account_name?: string; // 收款人姓名
   remark?: string;
   status?: string;
   created_at: string;

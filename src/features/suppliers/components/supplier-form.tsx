@@ -63,6 +63,8 @@ const formSchema = z.object({
     //   message: '请输入有效的邮箱地址'
     // }),
   address: z.string().optional(),
+  bankName: z.string().optional(), // 开户行
+  accountName: z.string().optional(), // 收款人姓名
   remark: z.string().optional()
 });
 
@@ -93,6 +95,8 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
     phone: initialData?.phone || '',
     email: initialData?.email || '',
     address: initialData?.address || '',
+    bankName: initialData?.bankName || '',
+    accountName: initialData?.accountName || '',
     remark: initialData?.remark || ''
   };
 
@@ -298,23 +302,61 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
           <div className='space-y-4'>
             <h4 className='text-sm font-medium'>其他信息</h4>
             
-            <FormField
-              control={form.control}
-              name='address'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>地址</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder='供应商地址'
-                      disabled={loading}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='address'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>地址</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='供应商地址'
+                        disabled={loading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='bankName'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>开户行</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='如：中国工商银行上海分行'
+                        disabled={loading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='accountName'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>收款人姓名</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='如：张三'
+                        disabled={loading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

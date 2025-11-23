@@ -11,6 +11,7 @@ import { createContext, useContext } from 'react';
 // 创建采购单表格操作上下文
 const PurchaseOrderTableContext = createContext<{
   onDeletePurchaseOrder?: (orderId: string) => void;
+  onRefresh?: () => void;
 }>({});
 
 // 导出 hook 供子组件使用
@@ -20,9 +21,10 @@ interface PurchaseOrderTableProps {
   data: PurchaseOrderTableItem[];
   totalData: number;
   onDeletePurchaseOrder?: (orderId: string) => void;
+  onRefresh?: () => void;
 }
 
-export function PurchaseOrderTable({ data, totalData, onDeletePurchaseOrder }: PurchaseOrderTableProps) {
+export function PurchaseOrderTable({ data, totalData, onDeletePurchaseOrder, onRefresh }: PurchaseOrderTableProps) {
   const [pageSize] = useQueryState('perPage', parseAsInteger.withDefault(10));
 
   const pageCount = Math.ceil(totalData / pageSize);
@@ -36,7 +38,7 @@ export function PurchaseOrderTable({ data, totalData, onDeletePurchaseOrder }: P
   });
 
   return (
-    <PurchaseOrderTableContext.Provider value={{ onDeletePurchaseOrder }}>
+    <PurchaseOrderTableContext.Provider value={{ onDeletePurchaseOrder, onRefresh }}>
       <DataTable table={table}>
         <DataTableToolbar table={table} />
       </DataTable>

@@ -10,6 +10,7 @@ import PageContainer from '@/components/layout/page-container';
 import { searchParamsCache } from '@/lib/searchparams';
 import { cn } from '@/lib/utils';
 import PurchaseOrderListingPage from '@/features/purchases/components/purchase-order-listing';
+import { PurchaseOrderWorkflowGuide } from '@/features/purchases/components/purchase-order-workflow-guide';
 
 type pageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -24,8 +25,8 @@ export default async function Page(props: pageProps) {
   searchParamsCache.parse(searchParams);
 
   return (
-    <PageContainer scrollable={false}>
-      <div className='flex flex-1 flex-col space-y-4'>
+    <PageContainer scrollable={true}>
+      <div className='w-full flex-col space-y-4'>
         <div className='flex items-start justify-between'>
           <Heading
             title='采购单管理'
@@ -39,6 +40,10 @@ export default async function Page(props: pageProps) {
           </Link>
         </div>
         <Separator />
+        
+        {/* 业务流程说明 */}
+        <PurchaseOrderWorkflowGuide />
+        
         <Suspense
           fallback={
             <DataTableSkeleton columnCount={9} rowCount={10} filterCount={3} />

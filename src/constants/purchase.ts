@@ -25,6 +25,7 @@ export const PURCHASE_ORDER_STATUS_OPTIONS = [
 export const PAYMENT_STATUS_OPTIONS = [
   { label: '全部', value: 'all' },
   { label: '未付款', value: 'UNPAID' },
+  { label: '部分付款', value: 'PARTIAL_PAID' },
   { label: '已付款', value: 'PAID' }
 ] as const;
 
@@ -61,6 +62,7 @@ export const STATUS_COLORS = {
   
   // 付款状态
   UNPAID: 'bg-yellow-100 text-yellow-800',
+  PARTIAL_PAID: 'bg-blue-100 text-blue-800',
   PAID: 'bg-green-100 text-green-800',
   
   // 到货状态
@@ -87,6 +89,7 @@ export const STATUS_LABELS = {
   
   // 付款状态
   UNPAID: '未付款',
+  PARTIAL_PAID: '部分付款',
   PAID: '已付款',
   
   // 到货状态

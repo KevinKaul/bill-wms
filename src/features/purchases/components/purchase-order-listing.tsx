@@ -3,7 +3,7 @@
 import { PurchaseOrderTableItem } from '@/types/purchase';
 import { PurchaseOrderTable } from './purchase-order-tables';
 import { useAuth } from '@clerk/nextjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 type PurchaseOrderListingPageProps = {};
@@ -14,6 +14,12 @@ export default function PurchaseOrderListingPage({}: PurchaseOrderListingPagePro
   const [data, setData] = useState<PurchaseOrderTableItem[]>([]);
   const [totalData, setTotalData] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // 刷新数据函数
+  const refreshData = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
 
   // 删除采购单的回调函数
   const handleDeletePurchaseOrder = (orderId: string) => {
@@ -59,8 +65,9 @@ export default function PurchaseOrderListingPage({}: PurchaseOrderListingPagePro
           supplierName: order.supplier_name,
           supplierCode: order.supplier_code,
           status: order.status,
-          paymentStatus: order.payment_status,
-          deliveryStatus: order.delivery_status,
+          paymentStatus: order.payment_status.toUpperCase(),
+          paidAmount: order.paid_amount || 0,
+          deliveryStatus: order.delivery_status.toUpperCase(),
           totalAmount: order.total_amount,
           itemCount: order.items_count,
           orderDate: order.order_date,
@@ -79,7 +86,7 @@ export default function PurchaseOrderListingPage({}: PurchaseOrderListingPagePro
     };
 
     fetchData();
-  }, [searchParams, getToken]);
+  }, [searchParams, getToken, refreshTrigger]);
 
   if (loading) {
     return <div>加载中...</div>;
@@ -90,6 +97,7 @@ export default function PurchaseOrderListingPage({}: PurchaseOrderListingPagePro
       data={data} 
       totalData={totalData} 
       onDeletePurchaseOrder={handleDeletePurchaseOrder}
+      onRefresh={refreshData}
     />
   );
 }

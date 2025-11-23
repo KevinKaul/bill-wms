@@ -81,6 +81,8 @@ export async function GET(
         phone: supplier.phone,
         email: supplier.email,
         address: supplier.address,
+        bank_name: supplier.bankName,
+        account_name: supplier.accountName,
         status: supplier.status,
         created_at: supplier.createdAt.toISOString(),
         updated_at: supplier.updatedAt.toISOString(),
@@ -215,6 +217,10 @@ export async function PUT(
       updateData.email = validatedData.email;
     if (validatedData.address !== undefined)
       updateData.address = validatedData.address;
+    if (validatedData.bank_name !== undefined)
+      updateData.bankName = validatedData.bank_name;
+    if (validatedData.account_name !== undefined)
+      updateData.accountName = validatedData.account_name;
     if (validatedData.status !== undefined)
       updateData.status = validatedData.status;
 
@@ -236,6 +242,8 @@ export async function PUT(
         phone: supplier.phone,
         email: supplier.email,
         address: supplier.address,
+        bank_name: supplier.bankName,
+        account_name: supplier.accountName,
         status: supplier.status,
         created_at: supplier.createdAt.toISOString(),
         updated_at: supplier.updatedAt.toISOString(),

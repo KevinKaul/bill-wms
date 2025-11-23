@@ -85,16 +85,42 @@ async function extractImagesFromExcelJS(file: File): Promise<Map<number, Buffer>
     const worksheet = workbook.worksheets[0];
     if (!worksheet) return imageMap;
 
-    // 从workbook.media中提取图片
-    const media = (workbook as any).media;
-    if (media && media.length > 0) {
-      media.forEach((mediaItem: any, index: number) => {
-        if (mediaItem && mediaItem.buffer) {
-          imageMap.set(index, mediaItem.buffer);
+    // 使用worksheet的图片集合
+    const images = worksheet.getImages();
+    console.log(`工作表中找到 ${images.length} 张图片`);
+    
+    images.forEach((image: any) => {
+      try {
+        // image.range包含图片的位置信息
+        // image.range格式: { tl: { row: 1, col: 0 }, br: { row: 2, col: 1 } }
+        // tl = top-left, br = bottom-right
+        const range = image.range;
+        if (range && range.tl) {
+          // 获取图片所在的行号（从0开始）
+          // range.tl.row 可能是小数（表示图片在单元格中的精确位置）
+          // 需要向下取整得到实际的行号
+          const exactRow = range.tl.row;
+          const rowIndex = Math.floor(exactRow);
+          
+          // 获取图片数据
+          const imageId = image.imageId;
+          const imageData = workbook.model.media?.find((m: any) => m.index === imageId);
+          
+          if (imageData && imageData.buffer) {
+            // 将行号映射到数据行索引（减去表头行）
+            const dataRowIndex = rowIndex - 1; // 减1是因为表头占第0行
+            console.log(`图片 ${imageId} 位于第 ${rowIndex + 1} 行（Excel行号），数据行索引: ${dataRowIndex}`);
+            // 转换为Node.js Buffer - 使用Uint8Array作为中间格式
+            const buffer = Buffer.from(new Uint8Array(imageData.buffer));
+            imageMap.set(dataRowIndex, buffer);
+          }
         }
-      });
-    }
+      } catch (err) {
+        console.error('处理图片时出错:', err);
+      }
+    });
 
+    console.log(`成功映射 ${imageMap.size} 张图片到对应行`);
     return imageMap;
   } catch (error) {
     console.error('Failed to extract images with ExcelJS:', error);

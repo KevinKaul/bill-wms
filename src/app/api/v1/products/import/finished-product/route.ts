@@ -20,19 +20,61 @@ async function extractImagesFromExcelJS(file: File): Promise<Map<string, Buffer>
 
     const imageMap = new Map<string, Buffer>();
 
+    // 获取所有媒体文件（图片）
+    const media = workbook.model.media;
+    console.log(`找到 ${media?.length || 0} 个媒体文件`);
+
     // 遍历所有工作表
     workbook.worksheets.forEach((worksheet, sheetIndex) => {
-      // 从workbook.media中提取图片
-      const media = (workbook as any).media;
-      if (media && media.length > 0) {
-        // 尝试找到与当前sheet相关的图片
-        // 通常第一张图片对应第一个sheet
-        if (media[sheetIndex] && media[sheetIndex].buffer) {
-          imageMap.set(worksheet.name, media[sheetIndex].buffer);
+      try {
+        // 方法1: 尝试使用worksheet.getImages()获取精确位置
+        const images = worksheet.getImages();
+        
+        if (images.length > 0) {
+          // 如果找到图片，使用精确的位置信息
+          images.forEach((image: any) => {
+            try {
+              const range = image.range;
+              if (range && range.tl) {
+                const exactRow = range.tl.row;
+                const rowIndex = Math.floor(exactRow);
+                
+                // 只处理前两行的图片（产品封面）
+                if (rowIndex <= 1) {
+                  const imageId = image.imageId;
+                  const imageData = workbook.model.media?.find((m: any) => m.index === imageId);
+                  
+                  if (imageData && imageData.buffer) {
+                    const buffer = Buffer.from(new Uint8Array(imageData.buffer));
+                    if (!imageMap.has(worksheet.name)) {
+                      imageMap.set(worksheet.name, buffer);
+                      console.log(`工作表 "${worksheet.name}" 封面图片已映射（方法1：精确位置）`);
+                    }
+                  }
+                }
+              }
+            } catch (err) {
+              console.error(`处理工作表 "${worksheet.name}" 的图片时出错:`, err);
+            }
+          });
+        } else {
+          // 方法2: 备用方法 - 按sheet顺序从media数组匹配
+          // 适用于worksheet.getImages()返回空的情况
+          if (media && media.length > sheetIndex) {
+            const mediaItem = media[sheetIndex];
+            if (mediaItem && mediaItem.buffer) {
+              const buffer = Buffer.from(new Uint8Array(mediaItem.buffer));
+              imageMap.set(worksheet.name, buffer);
+              console.log(`工作表 "${worksheet.name}" 封面图片已映射（方法2：顺序匹配）`);
+            }
+          }
         }
+      } catch (err) {
+        console.error(`处理工作表 "${worksheet.name}" 时出错:`, err);
       }
     });
 
+    console.log(`成功映射 ${imageMap.size} 个工作表的封面图片`);
     return imageMap;
   } catch (error) {
     console.error('Failed to extract images with ExcelJS:', error);

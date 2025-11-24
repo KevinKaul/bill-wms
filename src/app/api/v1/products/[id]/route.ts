@@ -335,9 +335,15 @@ export async function DELETE(request: NextRequest) {
 
     // 检查产品是否存在
     const existingProduct = await prisma.product.findUnique({
-      where: { id,deletedAt: null },
+      where: { id, deletedAt: null },
       include: {
-        bomComponents: true, // 检查是否被其他产品引用
+        bomComponents: {
+          where: {
+            product: {
+              deletedAt: null, // Only check references from non-deleted products
+            },
+          },
+        },
       },
     });
     console.log(existingProduct);
@@ -356,12 +362,30 @@ export async function DELETE(request: NextRequest) {
 
     // 检查产品是否被其他产品引用
     if (existingProduct.bomComponents.length > 0) {
+      // Get the product details that reference this product
+      const referencingProducts = await prisma.product.findMany({
+        where: {
+          id: {
+            in: existingProduct.bomComponents.map((bom) => bom.productId),
+          },
+          deletedAt: null,
+        },
+        select: {
+          sku: true,
+          name: true,
+        },
+      });
+
+      const productNames = referencingProducts
+        .map((p) => `${p.sku} (${p.name})`)
+        .join("、");
+
       return NextResponse.json(
         {
           success: false,
           error: {
             code: "PRODUCT_IN_USE",
-            message: "该产品已被其他产品引用，无法删除",
+            message: `无法删除，该产品已被以下产品引用：${productNames}`,
           },
         },
         { status: 400 }

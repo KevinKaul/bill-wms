@@ -37,6 +37,8 @@ export interface ProductSelectorProps {
   disabled?: boolean;
   showPrice?: boolean;
   productType?: 'RAW_MATERIAL' | 'FINISHED_PRODUCT';
+  // Allow passing pre-loaded products to avoid repeated API calls
+  preloadedProducts?: Product[];
 }
 
 export function ProductSelector({
@@ -46,13 +48,21 @@ export function ProductSelector({
   disabled = false,
   showPrice = true,
   productType,
+  preloadedProducts,
 }: ProductSelectorProps) {
   const { getToken } = useAuth();
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(preloadedProducts || []);
   const [loading, setLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // Update products when preloadedProducts changes
+  useEffect(() => {
+    if (preloadedProducts) {
+      setProducts(preloadedProducts);
+    }
+  }, [preloadedProducts]);
 
   // Load selected product details
   useEffect(() => {
@@ -61,17 +71,30 @@ export function ProductSelector({
       return;
     }
 
+    // Always try to find in products list first
+    const existingProduct = products.find(p => p.id === value);
+    if (existingProduct) {
+      setSelectedProduct(existingProduct);
+      return;
+    }
+
+    // If using preloaded products, don't make API call at all
+    // The product MUST be in the preloaded list
+    if (preloadedProducts && preloadedProducts.length > 0) {
+      // Product not found in preloaded list, but don't make API call
+      setSelectedProduct(null);
+      return;
+    }
+
+    // Only load from API if NOT using preloaded products
     const loadSelectedProduct = async () => {
       try {
         const clientApi = createClientApi(getToken);
-        const response = await clientApi.products.getProducts({
-          pageSize: 1,
-          search: value,
-        });
+        const response = await clientApi.products.getProduct(value);
 
         if (response.success && response.data) {
           const data = response.data as any;
-          const product = data.products?.find((p: any) => p.id === value);
+          const product = data.product;
           if (product) {
             setSelectedProduct({
               id: product.id,
@@ -80,7 +103,7 @@ export function ProductSelector({
               type: product.type,
               reference_purchase_price: product.reference_purchase_price,
               guide_unit_price: product.guide_unit_price,
-              image: product.image,
+              image: product.image_url,
             });
           }
         }
@@ -90,7 +113,7 @@ export function ProductSelector({
     };
 
     loadSelectedProduct();
-  }, [value, getToken]);
+  }, [value, products, preloadedProducts, getToken]);
 
   const searchProducts = useCallback(async (search: string) => {
     setLoading(true);
@@ -123,8 +146,13 @@ export function ProductSelector({
     }
   }, [getToken, productType]);
 
-  // Debounced search
+  // Debounced search - skip if using preloaded products
   useEffect(() => {
+    // If preloaded products are provided, skip API search
+    if (preloadedProducts && preloadedProducts.length > 0) {
+      return;
+    }
+
     const timer = setTimeout(() => {
       if (open) {
         searchProducts(searchValue);
@@ -132,10 +160,22 @@ export function ProductSelector({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchValue, open, searchProducts]);
+  }, [searchValue, open, searchProducts, preloadedProducts]);
 
-  const rawMaterials = products.filter(p => p.type === 'RAW_MATERIAL');
-  const finishedProducts = products.filter(p => p.type === 'FINISHED_PRODUCT');
+  // Client-side filtering when using preloaded products
+  const filteredProducts = useCallback(() => {
+    if (!searchValue) return products;
+    
+    const lowerSearch = searchValue.toLowerCase();
+    return products.filter(p => 
+      p.sku.toLowerCase().includes(lowerSearch) || 
+      p.name.toLowerCase().includes(lowerSearch)
+    );
+  }, [products, searchValue]);
+
+  const displayProducts = filteredProducts();
+  const rawMaterials = displayProducts.filter(p => p.type === 'RAW_MATERIAL');
+  const finishedProducts = displayProducts.filter(p => p.type === 'FINISHED_PRODUCT');
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -181,7 +221,7 @@ export function ProductSelector({
             <div className="p-4 text-center text-sm text-muted-foreground">
               <div className="inline-block animate-spin">⏳</div> 加载中...
             </div>
-          ) : products.length === 0 ? (
+          ) : displayProducts.length === 0 ? (
             <CommandEmpty>未找到产品</CommandEmpty>
           ) : (
             <div className="max-h-64 overflow-auto">

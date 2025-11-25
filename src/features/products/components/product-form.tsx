@@ -63,7 +63,6 @@ export default function ProductForm({
 }: ProductFormProps) {
   const router = useRouter();
   const { getToken } = useAuth();
-  const clientApi = createClientApi(getToken);
   const [loading, setLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [createdProductName, setCreatedProductName] = useState("");
@@ -162,10 +161,11 @@ export default function ProductForm({
     }
   }, [isEdit, initialData, form]);
 
-  // 获取原材料列表
+  // 获取原材料列表 - 只在组件挂载时执行一次
   useEffect(() => {
     const fetchRawMaterials = async () => {
       try {
+        const clientApi = createClientApi(getToken);
         const response = await clientApi.products.getProducts({
           type: ProductType.RAW_MATERIAL,
           pageSize: 1000, // 获取足够多的原材料
@@ -196,7 +196,8 @@ export default function ProductForm({
     };
 
     fetchRawMaterials();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // 添加BOM项
   const addBOMItem = () => {
@@ -233,6 +234,7 @@ export default function ProductForm({
 
     try {
       setLoading(true);
+      const clientApi = createClientApi(getToken);
 
       // 处理图片URL
       let imageUrl = null;
@@ -710,6 +712,8 @@ export default function ProductForm({
                                       onValueChange={componentField.onChange}
                                       placeholder="选择原材料"
                                       productType="RAW_MATERIAL"
+                                      preloadedProducts={rawMaterials}
+                                      showPrice={true}
                                     />
                                   </FormControl>
                                   <FormMessage />
